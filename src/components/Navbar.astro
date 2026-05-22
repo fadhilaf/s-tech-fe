@@ -1,7 +1,29 @@
 ---
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 ---
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-light bg-light" x-data="{ 
+  user: null, 
+  init() { 
+    const u = localStorage.getItem('user'); 
+    if (u) {
+      try {
+        this.user = JSON.parse(u);
+      } catch (e) {
+        console.error('Failed to parse user data', e);
+      }
+    } 
+  },
+  async logout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAdmin');
+    try {
+      await fetch(`${apiUrl}/api/auth/logout`, { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.href = '/';
+  }
+}">
     <div class="container px-4 px-lg-5">
       <a class="navbar-brand ms-2 fw-bold" href="/">
         <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" height="40px">
@@ -11,26 +33,49 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span
           class="navbar-toggler-icon"></span></button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4" id="navbar-nav-list">
           <li class="nav-item">
             <a class="nav-link" aria-current="page" href="/">
               Home
             </a>
           </li>
           
-          <!-- Assuming not logged in for this static version for now. 
-               Later we will add Alpine.js logic to toggle these. -->
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="/login">
-              Login
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="/register">
-              Register
-            </a>
-          </li>
+          <!-- Show when logged out -->
+          <template x-if="!user">
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="/login">Login</a>
+            </li>
+          </template>
+          <template x-if="!user">
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="/register">Register</a>
+            </li>
+          </template>
+
+          <!-- Show when logged in -->
+          <template x-if="user">
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="/pesanan">Pesanan</a>
+            </li>
+          </template>
+          <template x-if="user">
+            <li class="nav-item">
+              <button @click="logout()" class="nav-link bg-white border-0" aria-current="page">Logout</button>
+            </li>
+          </template>
         </ul>
+        
+        <!-- User Greeting Container -->
+        <template x-if="user">
+          <div class="my-auto">
+            <p class="mb-0" x-text="`Halo, ${user.name}`"></p>
+          </div>
+        </template>
       </div>
     </div>
 </nav>
+
+<script define:vars={{ apiUrl }}>
+  // Ensure apiUrl is available to Alpine methods by putting it on window
+  window.apiUrl = apiUrl;
+</script>

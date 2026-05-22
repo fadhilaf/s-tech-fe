@@ -1,0 +1,86 @@
+---
+import Layout from "../layouts/Layout.astro";
+import InputField from "../components/InputField.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Register">
+  <section>
+    <div class="container py-5 mt-5">
+      <div class="row d-flex justify-content-center align-items-center h-100">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <div class="card" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <div class="mb-md-5 mt-md-4 pb-2">
+                <h2 class="fw-bold mb-3 text-uppercase">Daftar ke S-tech</h2>
+                <a class="navbar-brand ms-2 fw-bold" href="/">
+                  <div>
+                    <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" border="0" height="150px">
+                  </div>
+                </a>
+                
+                <!-- Alpine wrapper for form state -->
+                <form id="register-form" 
+                      x-data="formValidation()"
+                      @htmx:before-request.camel="clearErrors()"
+                      @htmx:after-request.camel="handleResponse($event)"
+                      hx-post={`${apiUrl}/api/user`} 
+                      hx-swap="none">
+                  
+                  <InputField name="email" type="email" placeholder="Email" id="typeEmailX" wrapperClass="mt-4" />
+                  <InputField name="name" placeholder="Name" id="typeUsernameX" />
+                  <InputField name="phone" placeholder="No Telpon" id="typePhoneX" />
+                  <InputField name="address" placeholder="Address" id="typeAddressX" isTextArea={true} />
+                  <InputField name="password" type="password" placeholder="Password" id="typePasswordX" />
+
+                  <!-- Global Server Error Fallback -->
+                  <template x-if="serverError">
+                    <div class="alert alert-danger text-start fw-bold" role="alert" x-text="serverError"></div>
+                  </template>
+
+                  <button class="btn btn-primary btn-lg px-5 mt-3" type="submit" id="submit-btn">
+                    Daftar
+                  </button>
+                </form>
+              </div>
+              <div>
+                <p class="mb-0">
+                  Sudah Punya Akun ?
+                  <a href="/login" class="text-black fw-bold">Login</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener("htmx:afterRequest", (evt) => {
+      const form = document.getElementById("register-form");
+      if (evt.target !== form) return;
+
+      if (evt.detail.successful && evt.detail.xhr.status === 201) {
+        window.location.href = "/login";
+      }
+    });
+
+    document.addEventListener("htmx:beforeRequest", (evt) => {
+      if (evt.target === document.getElementById("register-form")) {
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true;
+        btn.innerText = "Loading...";
+      }
+    });
+
+    document.addEventListener("htmx:afterOnLoad", (evt) => {
+      if (evt.target === document.getElementById("register-form")) {
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = false;
+        btn.innerText = "Daftar";
+      }
+    });
+  </script>
+</Layout>

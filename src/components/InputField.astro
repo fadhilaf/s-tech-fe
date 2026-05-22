@@ -1,0 +1,49 @@
+---
+interface Props {
+  name: string;
+  type?: 'text' | 'email' | 'password' | 'number' | 'tel';
+  placeholder: string;
+  id?: string;
+  required?: boolean;
+  isTextArea?: boolean;
+  wrapperClass?: string;
+}
+
+const { 
+  name, 
+  type = 'text', 
+  placeholder, 
+  id = name, 
+  required = true, 
+  isTextArea = false,
+  wrapperClass = ''
+} = Astro.props;
+---
+
+<div class={`form-outline form-white mb-4 text-start ${wrapperClass}`.trim()}>
+  {isTextArea ? (
+    <textarea 
+      style="background-color: #dfe9f5;" 
+      id={id} 
+      name={name}
+      class="form-control form-control-lg" 
+      placeholder={placeholder} 
+      required={required}
+      x-bind:class={`errors.${name} ? 'is-invalid border-danger' : ''`}
+    ></textarea>
+  ) : (
+    <input 
+      style="background-color: #dfe9f5;" 
+      type={type} 
+      id={id} 
+      name={name}
+      class="form-control form-control-lg" 
+      placeholder={placeholder} 
+      required={required} 
+      x-bind:class={`errors.${name} ? 'is-invalid border-danger' : ''`} 
+    />
+  )}
+  <template x-if={`errors.${name}`}>
+    <div class="invalid-feedback fw-bold" x-text={`errors.${name}`}></div>
+  </template>
+</div>

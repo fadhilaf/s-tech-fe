@@ -1,0 +1,87 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Login Admin">
+  <section>
+    <div class="container py-5 mt-5">
+      <div class="row d-flex justify-content-center align-items-center h-100">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <div class="card" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <div class="mb-md-5 mt-md-4 pb-2">
+                <h2 class="fw-bold mb-3 text-uppercase">Login Admin S-tech</h2>
+                <a class="navbar-brand ms-2 fw-bold" href="/">
+                  <div>
+                    <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" border="0" height="150px">
+                  </div>
+                </a>
+                
+                <form id="admin-login-form" 
+                      hx-post={`${apiUrl}/api/auth/admin`} 
+                      hx-swap="innerHTML"
+                      hx-ext="response-targets, client-side-templates"
+                      handlebars-template="error-tmpl"
+                      hx-target-4xx="client-error-message"
+                      hx-target-5xx="#server-error-message">
+                  
+                  <div class="form-outline form-white mb-4 mt-4">
+                    <input style="background-color: #dfe9f5;" type="email" name="email" id="typeEmailX"
+                      class="form-control form-control-lg" placeholder="Email" required />
+                  </div>
+
+                  <div class="form-outline form-white mb-4">
+                    <input style="background-color: #dfe9f5;" type="password" name="password" id="typePasswordX"
+                      class="form-control form-control-lg" placeholder="Password" required />
+                  </div>
+
+                  <div id="client-error-message"></div>
+
+                  <button class="btn btn-primary btn-lg px-5 mt-3" type="submit" id="submit-btn">
+                    Masuk
+                  </button>
+                </form>
+
+                <div id="server-error-message"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <script>
+    document.addEventListener("htmx:afterRequest", (evt) => {
+      const form = document.getElementById("admin-login-form");
+      if (evt.target !== form) return;
+
+      if (evt.detail.successful && evt.detail.xhr.status === 200) {
+        localStorage.setItem("isAdmin", "true");
+        window.location.href = "/admin/dashboard";
+      }
+    });
+
+    document.addEventListener("htmx:beforeRequest", (evt) => {
+      if (evt.target === document.getElementById("admin-login-form")) {
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true;
+        btn.innerText = "Loading...";
+        const errDiv = document.getElementById("error-message");
+        if (errDiv) errDiv.innerHTML = "";
+      }
+    });
+
+    document.addEventListener("htmx:afterOnLoad", (evt) => {
+      if (evt.target === document.getElementById("admin-login-form")) {
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = false;
+        btn.innerText = "Masuk";
+      }
+    });
+  </script>
+</Layout>
