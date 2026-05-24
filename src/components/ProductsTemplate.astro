@@ -38,9 +38,15 @@
             </a>
             {{else}}
             <!-- User Actions -->
-            <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
-              Pesan
-            </a>
+              {{#if ../isLoggedIn}}
+              <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
+                Pesan
+              </a>
+              {{else}}
+              <a class="btn btn-outline-dark mt-auto" href="/login">
+                Pesan
+              </a>
+              {{/if}}
             {{/if}}
             
           </div>

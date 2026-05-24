@@ -1,0 +1,46 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Error 401 - Unauthorized">
+  <section class="page_401 d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="container text-center">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="col-sm-10 offset-sm-1 text-center">
+            <h1 class="display-1 fw-bold text-dark">401</h1>
+            <div class="content_box_401 mt-4">
+              <h3 class="h2 mb-3 text-dark">
+                Maaf, Anda tidak memiliki akses ke halaman ini
+              </h3>
+              <p class="text-muted mb-4">Diperlukan login untuk membuka halaman ini</p>
+              <a href="/login" class="btn btn-success px-4 py-2 fw-bold text-white shadow-sm link_401">Ke Halaman Login</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .page_401 {
+    background-color: #f8f9fa;
+  }
+
+  h1 {
+    font-size: 100px;
+    letter-spacing: 5px;
+  }
+
+  .link_401 {
+    background: #39ac31;
+    border-color: #39ac31;
+    border-radius: 5px;
+  }
+  
+  .link_401:hover {
+    background: #2d8a26;
+    border-color: #2d8a26;
+  }
+</style>

@@ -70,8 +70,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       const template = Handlebars.compile(source);
 
       const renderProducts = (products) => {
+        // Check if user is logged in from localStorage
+        const isLoggedIn = !!localStorage.getItem('user');
         // Pass isAdmin: false for public view
-        const html = template({ data: { products }, apiUrl, isAdmin: false });
+        const html = template({ data: { products }, apiUrl, isAdmin: false, isLoggedIn });
         productsContainer.innerHTML = html;
       };
 
