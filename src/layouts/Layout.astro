@@ -68,7 +68,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
             const responseCookie = cookies.find(c => c.trim().startsWith('response='));
             if (responseCookie) {
                 const message = decodeURIComponent(responseCookie.split('=')[1]);
-                alert(message.replace(/\+/g, ' '));
+                console.log("Success:", message.replace(/\+/g, ' '));
                 // Delete the cookie
                 document.cookie = 'response=; Max-Age=-99999999; Path=/;';
             }

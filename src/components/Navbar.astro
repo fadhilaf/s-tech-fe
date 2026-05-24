@@ -3,13 +3,29 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 ---
 <nav class="navbar navbar-expand-lg navbar-light bg-light" x-data="{ 
   user: null, 
-  init() { 
+  async init() { 
     const u = localStorage.getItem('user'); 
     if (u) {
       try {
         this.user = JSON.parse(u);
+        
+        const response = await fetch(`${apiUrl}/api/user/me`, { 
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error('Session expired or unauthorized');
+        }
+        
+        const data = await response.json();
+        if (data && data.data && data.data.user) {
+          this.user = data.data.user;
+          localStorage.setItem('user', JSON.stringify(this.user));
+        }
       } catch (e) {
-        console.error('Failed to parse user data', e);
+        console.error('Failed to parse user data or session expired', e);
+        this.user = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAdmin');
       }
     } 
   },
@@ -55,7 +71,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           <!-- Show when logged in -->
           <template x-if="user">
             <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="/pesanan">Pesanan</a>
+              <a class="nav-link" aria-current="page" href="/order">Order</a>
             </li>
           </template>
           <template x-if="user">

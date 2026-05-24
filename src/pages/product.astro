@@ -1,0 +1,187 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Product Details">
+  <Navbar />
+
+  <section class="gradient-custom min-vh-100">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center align-items-center">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <div class="card" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <div class="mb-md-5 mt-md-4 mb-0">
+                <h2 class="fw-bold mb-3 text-uppercase">Pesan produk:</h2>
+                
+                <div id="product-container">
+                  <div class="text-center w-100" id="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="product-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if data.product}}
+      {{#with data.product}}
+      <div class="col mb-5 text-start">
+        <div class="card">
+          <!-- Product image-->
+          <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
+          <!-- Product details-->
+          <div class="card-body p-4">
+            <div class="text-center">
+              <!-- Product name-->
+              <h5 class="fw-bolder">{{name}}</h5>
+              <!-- Product price-->
+              {{#if is_service}}
+              Rp {{current_price}} / Jam
+              {{else}}
+              Rp {{current_price}}
+              {{/if}}
+            </div>
+            <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">Deskripsi: {{description}}</p>
+          </div>
+          <!-- Product actions-->
+          <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+            <div class="text-center text-muted small">
+              {{#if is_service}}
+              Kuota: {{stock}} Tim
+              {{else}}
+              Stok: {{stock}} Unit
+              {{/if}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form action="{{../apiUrl}}/api/order" method="POST" id="order-form">
+        <input type="hidden" id="product_id" name="product_id" value="{{id}}">
+        
+        {{#if is_service}}
+        <input type="hidden" id="quantity" name="quantity" value="1" />
+        {{else}}
+        <div class="form-outline form-white mb-4 mt-4">
+          <input style="background-color: #dfe9f5;" type="number" id="quantity" name="quantity"
+            class="form-control form-control-lg" placeholder="Kuantitas pemesanan" required />
+        </div>
+        {{/if}}
+        
+        <div class="form-outline form-white mb-4">
+          <textarea style="background-color: #dfe9f5;" id="description" name="description"
+            class="form-control form-control-lg" placeholder="Deskripsi pemesanan"></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-lg px-5" type="submit">
+          Pesan
+        </button>
+      </form>
+      {{/with}}
+    {{else}}
+      <div class="alert alert-danger" role="alert">
+        Tidak ada produk yang dipilih atau produk tidak ditemukan.
+      </div>
+      <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", () => {
+      const productContainer = document.getElementById("product-container");
+      const source = document.getElementById("product-tmpl").innerHTML;
+      const template = Handlebars.compile(source);
+
+      const renderProduct = (product) => {
+        const html = template({ data: { product }, apiUrl });
+        productContainer.innerHTML = html;
+        
+        // Add auth header to form submission if needed, or rely on cookies
+        // Wait, Go backend uses cookie-based auth. So standard form post works.
+        // But since we are calling apiUrl, we need to ensure credentials are included if it's cross-origin.
+        // Actually, a standard <form action="..."> post across origins will send cookies IF SameSite allows it,
+        // but often we need to handle it via JS to send Authorization headers if using JWT in localStorage.
+        // In the existing login/register, does it use JWT in localStorage?
+        // Let's check Navbar.astro... It says localStorage.getItem('user').
+        // Wait, Go backend `ShouldUser()` middleware checks for cookies!
+        // Let's verify how it works. If it uses cookies, standard form works. If it uses Bearer token, standard form will FAIL.
+        setupForm();
+      };
+
+      const setupForm = () => {
+        const form = document.getElementById("order-form");
+        if (!form) return;
+        
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(form);
+          
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include'
+            });
+            
+            // Handle redirect manually since fetch is used
+            if (response.redirected) {
+              window.location.href = response.url;
+            } else if (response.ok) {
+              window.location.href = "/order";
+            } else {
+              const res = await response.json();
+              alert(res.message || "Gagal membuat pesanan");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Terjadi kesalahan.");
+          }
+        });
+      };
+
+      const fetchProduct = async (id) => {
+        try {
+          const response = await fetch(`${apiUrl}/api/product/${id}`);
+          const result = await response.json();
+          
+          if (result && result.data && result.data.product) {
+            renderProduct(result.data.product);
+          } else {
+            renderProduct(null);
+          }
+        } catch (error) {
+          console.error("Error fetching product:", error);
+          productContainer.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+              Gagal mengambil data produk.
+            </div>
+            <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
+          `;
+        }
+      };
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+      
+      if (productId) {
+        fetchProduct(productId);
+      } else {
+        renderProduct(null);
+      }
+    });
+  </script>
+</Layout>

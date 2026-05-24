@@ -21,11 +21,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 </a>
                 
                 <!-- HTMX Form with response-targets & client-side-templates -->
+                      <!-- delete hx-request when on same origin env like nginx or dns -->
                 <form id="login-form" 
                       x-data="formValidation()"
                       @htmx:before-request.camel="clearErrors()"
                       @htmx:after-request.camel="handleResponse($event)"
                       hx-post={`${apiUrl}/api/auth/login`} 
+                      hx-request='{"credentials": true}'
                       hx-swap="none">
                   
                   <InputField name="email" type="email" id="typeEmailX" placeholder="Email" wrapperClass="mt-4" />

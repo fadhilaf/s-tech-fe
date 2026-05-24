@@ -1,0 +1,147 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Your Orders">
+  <Navbar />
+
+  <section class="gradient-custom min-vh-100">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center align-items-center">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <h2 class="fw-bold mb-3 text-uppercase text-center text-white">
+            Order anda
+          </h2>
+
+          <div id="orders-container">
+            <div class="text-center w-100 mt-5" id="loading-spinner">
+              <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="orders-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if data.orders.length}}
+      {{#each data.orders}}
+      <div class="card mt-3" style="border-radius: 1rem">
+        <div class="card-body">
+          <p class="mb-0">Id Order: {{id}}</p>
+          <p class="mb-0">Id Produk: {{product_id}}</p>
+          <p class="mb-0">Nama Produk: {{product_name}}</p>
+          <p class="mb-0">Harga: Rp {{product_price}}</p>
+          {{#unless is_service}}
+          <p class="mb-0">Kuantitas order : {{quantity}}</p>
+          {{/unless}}
+          <p class="mb-0">Status order : {{status}}</p>
+          <p class="mb-0">Deskripsi order : {{description}}</p>
+
+          <div>
+            {{#if (eq status "processing")}}
+            <form action="{{../apiUrl}}/api/order/delivered" method="POST" class="delivered-form mt-2">
+              <input type="hidden" name="id" value="{{id}}" />
+              <button class="btn btn-sm btn-success">Diterima</button>
+            </form>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    {{else}}
+      <div class="alert alert-info mt-4 text-center" role="alert">
+        Belum ada order yang dibuat.
+      </div>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", () => {
+      const ordersContainer = document.getElementById("orders-container");
+      const source = document.getElementById("orders-tmpl").innerHTML;
+      
+      // Register custom helper for Handlebars eq
+      Handlebars.registerHelper('eq', function(arg1, arg2) {
+        return arg1 === arg2;
+      });
+      
+      const template = Handlebars.compile(source);
+
+      const renderOrders = (orders) => {
+        const html = template({ data: { orders: orders || [] }, apiUrl });
+        ordersContainer.innerHTML = html;
+        setupForms();
+      };
+
+      const setupForms = () => {
+        const forms = document.querySelectorAll(".delivered-form");
+        forms.forEach(form => {
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+              const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+              
+              if (response.redirected) {
+                window.location.href = response.url;
+              } else if (response.ok) {
+                // reload orders
+                fetchOrders();
+              } else {
+                const res = await response.json();
+                alert(res.message || "Gagal memperbarui status order");
+              }
+            } catch (err) {
+              console.error(err);
+              alert("Terjadi kesalahan.");
+            }
+          });
+        });
+      };
+
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch(`${apiUrl}/api/order`, {
+            credentials: 'include'
+          });
+          
+          if (response.status === 401) {
+            window.location.href = '/login';
+            return;
+          }
+          
+          const result = await response.json();
+          
+          if (result && result.data && result.data.orders) {
+            renderOrders(result.data.orders);
+          } else {
+            renderOrders([]);
+          }
+        } catch (error) {
+          console.error("Error fetching orders:", error);
+          ordersContainer.innerHTML = `
+            <div class="alert alert-danger mt-4 text-center" role="alert">
+              Gagal mengambil data order.
+            </div>
+          `;
+        }
+      };
+
+      fetchOrders();
+    });
+  </script>
+</Layout>
