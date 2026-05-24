@@ -1,0 +1,26 @@
+---
+const { 
+  label, 
+  id, 
+  name, 
+  value = "true",
+  required = false, 
+  containerClass = "form-check mb-3",
+  inputClass = "form-check-input",
+  labelClass = "form-check-label"
+} = Astro.props;
+---
+
+<div class={containerClass}>
+  <input
+    class={inputClass}
+    type="checkbox"
+    value={value}
+    id={id}
+    name={name}
+    required={required}
+  />
+  <label class={labelClass} for={id}>
+    {label}
+  </label>
+</div>

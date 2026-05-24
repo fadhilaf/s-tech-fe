@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
+import ProductsTemplate from "../components/ProductsTemplate.astro";
 
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 ---
@@ -55,47 +56,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <Footer />
 
-  <!-- Handlebars Template for rendering products -->
-  <script id="products-tmpl" type="text/x-handlebars-template" is:raw>
-    {{#if data.products}}
-      {{#each data.products}}
-      <div class="col mb-5">
-        <div class="card h-100">
-          <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
-          <div class="card-body p-4">
-            <div class="text-center">
-              <h5 class="fw-bolder">{{name}}</h5>
-              {{#if is_service}}
-              Rp {{current_price}} / Jam
-              {{else}}
-              Rp {{current_price}}
-              {{/if}}
-            </div>
-            <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">{{description}}</p>
-          </div>
-          <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-            <div class="text-center">
-              <p class="mb-2 text-muted small">
-                {{#if is_service}}
-                Kuota: {{stock}} Tim
-                {{else}}
-                Stok: {{stock}} Unit
-                {{/if}}
-              </p>
-              <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
-                Pesan
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-      {{/each}}
-    {{else}}
-      <div class="col-12 text-center">
-        <h3>Tidak ditemukan produk.</h3>
-      </div>
-    {{/if}}
-  </script>
+  <ProductsTemplate />
 
   <script define:vars={{ apiUrl }}>
     document.addEventListener("DOMContentLoaded", () => {
@@ -109,8 +70,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       const template = Handlebars.compile(source);
 
       const renderProducts = (products) => {
-        // We pass apiUrl into the template context so Handlebars can access it using ../apiUrl
-        const html = template({ data: { products }, apiUrl });
+        // Pass isAdmin: false for public view
+        const html = template({ data: { products }, apiUrl, isAdmin: false });
         productsContainer.innerHTML = html;
       };
 

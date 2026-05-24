@@ -1,0 +1,44 @@
+---
+const { 
+  label, 
+  type = "text", 
+  id, 
+  name, 
+  required = false, 
+  accept, 
+  min, 
+  max, 
+  value, 
+  readonly,
+  containerClass = "mb-3",
+  inputClass = "form-control",
+  helpText
+} = Astro.props;
+---
+
+<div class={containerClass}>
+  <label class="form-label" for={id}>{label}</label>
+  {type === "textarea" ? (
+    <textarea
+      id={id}
+      name={name}
+      class={inputClass}
+      rows="3"
+      required={required}
+    ></textarea>
+  ) : (
+    <input
+      type={type}
+      id={id}
+      name={name}
+      class={inputClass}
+      required={required}
+      accept={accept}
+      min={min}
+      max={max}
+      value={value}
+      readonly={readonly}
+    />
+  )}
+  {helpText && <small class="text-muted">{helpText}</small>}
+</div>

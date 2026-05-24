@@ -1,0 +1,22 @@
+---
+const { 
+  label, 
+  id, 
+  name, 
+  required = false, 
+  containerClass = "mb-3",
+  selectClass = "form-select"
+} = Astro.props;
+---
+
+<div class={containerClass}>
+  <label class="form-label" for={id}>{label}</label>
+  <select
+    id={id}
+    name={name}
+    class={selectClass}
+    required={required}
+  >
+    <slot />
+  </select>
+</div>

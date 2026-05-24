@@ -1,0 +1,56 @@
+---
+// ProductsTemplate.astro
+// Reusable Handlebars template for rendering product lists.
+// Can render either User view (Pesan button) or Admin view (Edit/Delete buttons).
+---
+
+<script id="products-tmpl" type="text/x-handlebars-template" is:raw>
+  {{#if data.products.length}}
+    {{#each data.products}}
+    <div class="col mb-5">
+      <div class="card h-100">
+        <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
+        <div class="card-body p-4">
+          <div class="text-center">
+            <h5 class="fw-bolder">{{name}}</h5>
+            {{#if is_service}}
+            Rp {{current_price}} / Jam
+            {{else}}
+            Rp {{current_price}}
+            {{/if}}
+          </div>
+          <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">{{description}}</p>
+        </div>
+        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+          <div class="text-center">
+            <p class="mb-2 text-muted small">
+              {{#if is_service}}
+              Kuota: {{stock}} Tim
+              {{else}}
+              Stok: {{stock}} Unit
+              {{/if}}
+            </p>
+            
+            {{#if ../isAdmin}}
+            <!-- Admin Actions -->
+            <a class="btn btn-outline-dark mt-auto" href="#">
+              Edit
+            </a>
+            {{else}}
+            <!-- User Actions -->
+            <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
+              Pesan
+            </a>
+            {{/if}}
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/each}}
+  {{else}}
+    <div class="col-12 text-center mt-4">
+      <h3>Tidak ada produk yang ditemukan.</h3>
+    </div>
+  {{/if}}
+</script>

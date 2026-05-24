@@ -1,0 +1,139 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+
+import FormField from "../../components/FormField.astro";
+import FormDropdown from "../../components/FormDropdown.astro";
+import FormCheck from "../../components/FormCheck.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Add Product">
+  <NavbarAdmin />
+
+  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+          <div class="card bg-dark text-white" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <h2 class="fw-bold mb-4 text-uppercase">Add Product</h2>
+              <p class="text-white-50 mb-5">
+                Masukkan detail produk baru di bawah ini.
+              </p>
+
+              <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
+              <form
+                id="add-product-form"
+                hx-post={`${apiUrl}/api/product/admin`}
+                hx-encoding="multipart/form-data"
+                hx-request='{"credentials": true}'
+                hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
+                hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+              >
+                <!-- Name -->
+                <FormField 
+                  label="Nama Produk" id="name" name="name" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Price -->
+                <FormField 
+                  type="number" label="Harga" id="price" name="price" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Stock -->
+                <FormField 
+                  type="number" label="Stok Awal" id="stock" name="stock" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Supplier Selection -->
+                <FormDropdown 
+                  label="Supplier" id="supplier_id" name="supplier_id" required={true}
+                  containerClass="form-outline form-white mb-4 text-start"
+                  selectClass="form-select form-select-lg"
+                >
+                  <option value="" disabled selected>Pilih Supplier</option>
+                  <!-- Options populated by JS -->
+                </FormDropdown>
+
+                <!-- Description -->
+                <FormField 
+                  type="textarea" label="Deskripsi" id="description" name="description" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Is Service -->
+                <FormCheck 
+                  label="Tandai sebagai Jasa (Bukan Barang Fisik)" 
+                  id="is_service" 
+                  name="is_service" 
+                  containerClass="form-check form-white mb-4 text-start"
+                />
+
+                <!-- Image Upload -->
+                <FormField 
+                  type="file" label="Gambar Produk" id="image" name="image" accept="image/*" required={true} 
+                  containerClass="form-outline form-white mb-5 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <button
+                  id="submit-btn"
+                  class="btn btn-outline-light btn-lg px-5 mt-3 w-100 fw-bold"
+                  type="submit"
+                >
+                  SIMPAN
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Fetch suppliers to populate dropdown
+      const supplierSelect = document.getElementById("supplier_id");
+      try {
+        const res = await fetch(`${apiUrl}/api/product/admin/supplier`, {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.data && result.data.suppliers) {
+            result.data.suppliers.forEach(supplier => {
+              const option = document.createElement("option");
+              option.value = supplier.id;
+              option.textContent = supplier.name;
+              supplierSelect.appendChild(option);
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil data supplier:", err);
+      }
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>
