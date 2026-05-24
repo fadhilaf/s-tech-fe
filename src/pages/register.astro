@@ -26,7 +26,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                       @htmx:before-request.camel="clearErrors()"
                       @htmx:after-request.camel="handleResponse($event)"
                       hx-post={`${apiUrl}/api/user`} 
-                      hx-swap="none">
+                      hx-swap="none"
+                      hx-on::before-request="const btn = this.querySelector('#submit-btn'); btn.disabled = true; btn.innerText = 'Loading...';"
+                      hx-on::after-request="const btn = this.querySelector('#submit-btn'); btn.disabled = false; btn.innerText = 'Daftar';">
                   
                   <InputField name="email" type="email" placeholder="Email" id="typeEmailX" wrapperClass="mt-4" />
                   <InputField name="name" placeholder="Name" id="typeUsernameX" />
@@ -56,31 +58,4 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       </div>
     </div>
   </section>
-
-  <script>
-    document.addEventListener("htmx:afterRequest", (evt) => {
-      const form = document.getElementById("register-form");
-      if (evt.target !== form) return;
-
-      if (evt.detail.successful && evt.detail.xhr.status === 201) {
-        window.location.href = "/login";
-      }
-    });
-
-    document.addEventListener("htmx:beforeRequest", (evt) => {
-      if (evt.target === document.getElementById("register-form")) {
-        const btn = document.getElementById("submit-btn");
-        btn.disabled = true;
-        btn.innerText = "Loading...";
-      }
-    });
-
-    document.addEventListener("htmx:afterOnLoad", (evt) => {
-      if (evt.target === document.getElementById("register-form")) {
-        const btn = document.getElementById("submit-btn");
-        btn.disabled = false;
-        btn.innerText = "Daftar";
-      }
-    });
-  </script>
 </Layout>

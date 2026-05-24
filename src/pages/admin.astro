@@ -21,11 +21,14 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 
                 <form id="admin-login-form" 
                       hx-post={`${apiUrl}/api/auth/admin`} 
-                      hx-swap="innerHTML"
+                      hx-request='{"credentials": true}'
                       hx-ext="response-targets, client-side-templates"
-                      handlebars-template="error-tmpl"
-                      hx-target-4xx="client-error-message"
-                      hx-target-5xx="#server-error-message">
+                      hx-swap="innerHTML"
+                      handlebars-template="response-tmpl"
+                      hx-target-4xx="#client-error-message"
+                      hx-target-5xx="#server-error-message"
+                      hx-on::before-request="const btn = this.querySelector('#submit-btn'); btn.disabled = true; btn.innerText = 'Loading...';"
+                      hx-on::after-request="const btn = this.querySelector('#submit-btn'); btn.disabled = false; btn.innerText = 'Masuk';">
                   
                   <div class="form-outline form-white mb-4 mt-4">
                     <input style="background-color: #dfe9f5;" type="email" name="email" id="typeEmailX"
@@ -52,36 +55,4 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       </div>
     </div>
   </section>
-
-
-
-  <script>
-    document.addEventListener("htmx:afterRequest", (evt) => {
-      const form = document.getElementById("admin-login-form");
-      if (evt.target !== form) return;
-
-      if (evt.detail.successful && evt.detail.xhr.status === 200) {
-        localStorage.setItem("isAdmin", "true");
-        window.location.href = "/admin/dashboard";
-      }
-    });
-
-    document.addEventListener("htmx:beforeRequest", (evt) => {
-      if (evt.target === document.getElementById("admin-login-form")) {
-        const btn = document.getElementById("submit-btn");
-        btn.disabled = true;
-        btn.innerText = "Loading...";
-        const errDiv = document.getElementById("error-message");
-        if (errDiv) errDiv.innerHTML = "";
-      }
-    });
-
-    document.addEventListener("htmx:afterOnLoad", (evt) => {
-      if (evt.target === document.getElementById("admin-login-form")) {
-        const btn = document.getElementById("submit-btn");
-        btn.disabled = false;
-        btn.innerText = "Masuk";
-      }
-    });
-  </script>
 </Layout>

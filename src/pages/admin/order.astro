@@ -1,0 +1,139 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Pesanan Admin">
+  <NavbarAdmin />
+
+  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center align-items-center">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <h2 class="fw-bold mb-3 text-uppercase text-center text-white">
+            List Pesanan User
+          </h2>
+
+          <div id="orders-container">
+            <div class="text-center mt-5">
+              <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="orders-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if data.orders.length}}
+      {{#each data.orders}}
+      <div class="card mt-3 shadow-sm" style="border-radius: 1rem">
+        <div class="card-body">
+          <p class="mb-0"><strong>Id Pesanan:</strong> {{id}}</p>
+          <p class="mb-0"><strong>Id Produk:</strong> {{product_id}}</p>
+          <p class="mb-0"><strong>Nama Produk:</strong> {{product_name}}</p>
+          <p class="mb-0"><strong>Harga:</strong> Rp {{product_price}}</p>
+          <hr class="my-2" />
+          <p class="mb-0"><strong>Id Pembeli:</strong> {{buyer_id}}</p>
+          <p class="mb-0"><strong>Nama Pembeli:</strong> {{buyer_name}}</p>
+          <p class="mb-0"><strong>Alamat Pembeli:</strong> {{buyer_address}}</p>
+          <p class="mb-0"><strong>No. Telepon Pembeli:</strong> {{buyer_phone}}</p>
+          <hr class="my-2" />
+          {{#unless is_service}}
+          <p class="mb-0"><strong>Kuantitas:</strong> {{quantity}}</p>
+          {{/unless}}
+          <p class="mb-0"><strong>Status:</strong> <span class="badge {{#if (eq status 'pending')}}bg-warning text-dark{{else if (eq status 'processing')}}bg-info text-dark{{else}}bg-success{{/if}}">{{status}}</span></p>
+          <p class="mb-0"><strong>Deskripsi:</strong> {{description}}</p>
+
+          <div>
+            {{#if (eq status "pending")}}
+            <form hx-post="{{../apiUrl}}/api/order/processing" 
+                  hx-request='{"credentials": true}' 
+                  class="processing-form mt-3 text-end"
+                  hx-on::before-request="this.querySelector('button').disabled = true; this.querySelector('button').innerHTML = 'Memproses...';">
+              <input type="hidden" name="id" value="{{id}}" />
+              <button class="btn btn-sm btn-primary">Proses</button>
+            </form>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    {{else}}
+      <div class="card mt-3" style="border-radius: 1rem">
+        <div class="card-body text-center">
+          <h4 class="mb-0">Belum ada pesanan.</h4>
+        </div>
+      </div>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", () => {
+      const ordersContainer = document.getElementById("orders-container");
+      const source = document.getElementById("orders-tmpl").innerHTML;
+      
+      Handlebars.registerHelper('eq', function(arg1, arg2) {
+        return arg1 === arg2;
+      });
+      
+      const template = Handlebars.compile(source);
+
+      const renderOrders = (orders) => {
+        const html = template({ data: { orders: orders || [] }, apiUrl });
+        ordersContainer.innerHTML = html;
+        htmx.process(ordersContainer);
+      };
+
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch(`${apiUrl}/api/order`, {
+            credentials: 'include' // Needed for admin session validation
+          });
+          
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              window.location.href = "/admin"; // Redirect to admin login if unauthorized
+              return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          if (result && result.data && result.data.orders) {
+            renderOrders(result.data.orders);
+          } else {
+            renderOrders([]);
+          }
+        } catch (error) {
+          console.error("Error fetching orders:", error);
+          ordersContainer.innerHTML = `
+            <div class="card mt-3" style="border-radius: 1rem">
+              <div class="card-body text-center text-danger">
+                <h4>Gagal mengambil data pesanan.</h4>
+              </div>
+            </div>
+          `;
+        }
+      };
+
+      fetchOrders();
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>

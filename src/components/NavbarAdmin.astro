@@ -1,0 +1,63 @@
+---
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+<nav class="navbar navbar-expand-lg navbar-light bg-light" x-data="{ 
+  isAdmin: false, 
+  async init() { 
+    try {
+      const response = await fetch(`${apiUrl}/api/auth/me`, { 
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data && data.data && data.data.user && data.data.user.is_admin) {
+        this.isAdmin = true;
+      } else {
+        window.location.href = '/admin';
+      }
+    } catch (e) {
+      window.location.href = '/admin';
+    }
+  }
+}">
+    <div class="container px-4 px-lg-5">
+      <a class="navbar-brand ms-2 fw-bold" href="/admin/dashboard">
+        <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" height="40px">
+        S-TECH ADMIN
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span
+          class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4" id="navbar-nav-list">
+          
+          <li class="nav-item" x-show="isAdmin" style="display: none;">
+            <a class="nav-link" aria-current="page" href="/admin/dashboard">Dashboard</a>
+          </li>
+          
+          <li class="nav-item" x-show="isAdmin" style="display: none;">
+            <a class="nav-link" aria-current="page" href="/admin/tambah">Tambah Produk</a>
+          </li>
+
+          <li class="nav-item" x-show="isAdmin" style="display: none;">
+            <a class="nav-link" aria-current="page" href="/admin/order">Pesanan</a>
+          </li>
+          
+          <li class="nav-item" x-show="isAdmin" style="display: none;">
+            <button hx-post={`${apiUrl}/api/auth/logout`}
+                    hx-request='{"credentials": true}'
+                    @click="localStorage.removeItem('user'); localStorage.removeItem('isAdmin');"
+                    class="nav-link bg-white border-0" 
+                    aria-current="page">Logout</button>
+          </li>
+        </ul>
+        
+        <div class="my-auto" x-show="isAdmin" style="display: none;">
+          <p class="mb-0 fw-bold">Admin S-TECH</p>
+        </div>
+      </div>
+    </div>
+</nav>
+
+<script define:vars={{ apiUrl }}>
+  window.apiUrl = apiUrl;
+</script>

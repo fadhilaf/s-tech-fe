@@ -48,7 +48,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
           <div>
             {{#if (eq status "processing")}}
-            <form action="{{../apiUrl}}/api/order/delivered" method="POST" class="delivered-form mt-2">
+            <form hx-post="{{../apiUrl}}/api/order/delivered" 
+                  hx-request='{"credentials": true}' 
+                  class="delivered-form mt-2">
               <input type="hidden" name="id" value="{{id}}" />
               <button class="btn btn-sm btn-success">Diterima</button>
             </form>
@@ -79,38 +81,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       const renderOrders = (orders) => {
         const html = template({ data: { orders: orders || [] }, apiUrl });
         ordersContainer.innerHTML = html;
-        setupForms();
-      };
-
-      const setupForms = () => {
-        const forms = document.querySelectorAll(".delivered-form");
-        forms.forEach(form => {
-          form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            
-            try {
-              const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-              });
-              
-              if (response.redirected) {
-                window.location.href = response.url;
-              } else if (response.ok) {
-                // reload orders
-                fetchOrders();
-              } else {
-                const res = await response.json();
-                alert(res.message || "Gagal memperbarui status order");
-              }
-            } catch (err) {
-              console.error(err);
-              alert("Terjadi kesalahan.");
-            }
-          });
-        });
+        htmx.process(ordersContainer);
       };
 
       const fetchOrders = async () => {

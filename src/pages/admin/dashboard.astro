@@ -1,0 +1,165 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Admin Dashboard">
+  <NavbarAdmin />
+
+  <header class="py-5 gradient-custom">
+    <div class="container px-4 px-lg-5 my-5">
+      <div class="text-center text-white">
+        <h1 class="display-4 fw-bolder">Dashboard S-TECH</h1>
+        <p class="lead fw-normal text-white-50 mb-0">Manajemen Produk</p>
+
+        <!-- Search Form -->
+        <form id="search-form" class="d-flex mt-4" role="search">
+          <input
+            id="search-input"
+            class="form-control me-2"
+            type="search"
+            placeholder="Cari produk..."
+            aria-label="Search"
+            name="search"
+          />
+          <button class="btn border-2 border-white" type="submit">
+            <i class="bi bi-search"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <section class="py-5">
+    <h2 class="text-center" id="section-title">Daftar Produk</h2>
+    <div class="m-4 text-center" id="search-stats"></div>
+
+    <div class="container px-4 px-lg-5 mt-5">
+      <div
+        id="products-container"
+        class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center"
+      >
+        <div class="text-center w-100" id="loading-spinner">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="products-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if data.products.length}}
+      {{#each data.products}}
+      <div class="col mb-5">
+        <div class="card h-100">
+          <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
+          <div class="card-body p-4">
+            <div class="text-center">
+              <h5 class="fw-bolder">{{name}}</h5>
+              {{#if is_service}}
+              Rp {{current_price}} / Jam
+              {{else}}
+              Rp {{current_price}}
+              {{/if}}
+            </div>
+            <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">{{description}}</p>
+          </div>
+          <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+            <div class="text-center">
+              <p class="mb-2 text-muted small">
+                {{#if is_service}}
+                Kuota: {{stock}} Tim
+                {{else}}
+                Stok: {{stock}} Unit
+                {{/if}}
+              </p>
+              <a class="btn btn-outline-dark mt-auto" href="#">
+                Edit
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    {{else}}
+      <div class="col-12 text-center">
+        <h3>Tidak ditemukan produk.</h3>
+      </div>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", () => {
+      const productsContainer = document.getElementById("products-container");
+      const searchForm = document.getElementById("search-form");
+      const searchInput = document.getElementById("search-input");
+      const searchStats = document.getElementById("search-stats");
+      const sectionTitle = document.getElementById("section-title");
+      const loadingSpinner = document.getElementById("loading-spinner").outerHTML;
+
+      const source = document.getElementById("products-tmpl").innerHTML;
+      const template = Handlebars.compile(source);
+
+      const renderProducts = (products, searchQuery) => {
+        const html = template({ data: { products: products || [] }, apiUrl });
+        productsContainer.innerHTML = html;
+
+        if (searchQuery) {
+          sectionTitle.innerText = `Hasil pencarian produk: ${searchQuery}`;
+          searchStats.innerHTML = `<h5 class="text-muted">Total produk: ${products ? products.length : 0}</h5>`;
+        } else {
+          sectionTitle.innerText = "Daftar Produk";
+          searchStats.innerHTML = "";
+        }
+      };
+
+      const fetchProducts = async (searchQuery = "") => {
+        productsContainer.innerHTML = loadingSpinner;
+        
+        try {
+          const url = searchQuery 
+            ? `${apiUrl}/api/product?search=${encodeURIComponent(searchQuery)}`
+            : `${apiUrl}/api/product`;
+            
+          const response = await fetch(url);
+          const result = await response.json();
+          
+          if (result && result.data && result.data.products) {
+            renderProducts(result.data.products, searchQuery);
+          } else {
+            renderProducts([], searchQuery);
+          }
+        } catch (error) {
+          console.error("Error fetching products:", error);
+          productsContainer.innerHTML = `
+            <div class="col-12 text-center text-danger">
+              <h3>Gagal mengambil data produk.</h3>
+            </div>
+          `;
+        }
+      };
+
+      fetchProducts();
+
+      searchForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        fetchProducts(query);
+      });
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>
