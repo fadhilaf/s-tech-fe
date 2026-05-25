@@ -47,9 +47,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           </li>
 
           <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/stock">Stock</a>
+            <a class="nav-link" aria-current="page" href="/admin/report">Report</a>
           </li>
-          
+
+
           <li class="nav-item" x-show="isAdmin" style="display: none;">
             <button hx-post={`${apiUrl}/api/auth/logout`}
                     hx-request='{"credentials": true}'

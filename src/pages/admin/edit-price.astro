@@ -1,0 +1,206 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+import FormField from "../../components/FormField.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Edit Price">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+  <NavbarAdmin />
+
+  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+          <div class="card bg-dark text-white" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <h2 class="fw-bold mb-4 text-uppercase">Ubah Harga Produk</h2>
+              <p class="text-white-50 mb-4" id="product-name-display">
+                Memuat produk...
+              </p>
+
+              <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
+              <form
+                id="edit-price-form"
+                hx-request='{"credentials": true}'
+                hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
+                hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+              >
+                <!-- Current Price Display (Disabled) -->
+                <FormField 
+                  type="text" label="Harga Saat Ini (Rp)" id="current_price" name="current_price" required={false} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg bg-secondary text-white border-secondary" 
+                />
+
+                <!-- New Price -->
+                <FormField 
+                  type="number" label="Harga Baru (Rp)" id="price" name="price" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                  helpText="Masukkan harga yang akan berlaku."
+                />
+
+                <!-- Effective Date -->
+                <FormField 
+                  type="text" label="Tanggal Efektif" id="effective_date" name="effective_date" required={true} 
+                  containerClass="form-outline form-white mb-5 text-start" 
+                  inputClass="form-control form-control-lg bg-dark text-white" 
+                  helpText="Tentukan kapan harga ini mulai berlaku (WIB)."
+                />
+
+                <button
+                  id="submit-btn"
+                  class="btn btn-warning btn-lg px-5 mt-3 w-100 fw-bold"
+                  type="submit"
+                >
+                  SIMPAN
+                </button>
+                
+                <a href="/admin/dashboard" id="cancel-btn" class="btn btn-outline-light btn-lg px-5 mt-3 w-100 fw-bold">
+                  KEMBALI
+                </a>
+              </form>
+              
+              <hr class="my-5 border-light" />
+              <h4 class="fw-bold mb-4 text-uppercase">Riwayat Harga</h4>
+              <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th scope="col">Tanggal Mulai Berlaku</th>
+                      <th scope="col">Harga (Rp)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="price-history-table-body">
+                    <tr>
+                      <td colspan="2" class="text-center">Memuat riwayat...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="price-history-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if prices.length}}
+      {{#each prices}}
+      <tr>
+        <td>{{formatDate effective_date}}</td>
+        <td>Rp {{price}}</td>
+      </tr>
+      {{/each}}
+    {{else}}
+      <tr>
+        <td colspan="2" class="text-center text-muted">Belum ada riwayat harga.</td>
+      </tr>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+
+      if (!productId) {
+        document.getElementById('error-message').textContent = 'ID Produk tidak ditemukan';
+        document.getElementById('error-message').classList.remove('d-none');
+        return;
+      }
+
+      document.getElementById('cancel-btn').href = `/admin/edit-product?id=${productId}`;
+
+      // Set HTMX dynamic post URL
+      const form = document.getElementById("edit-price-form");
+      form.setAttribute('hx-post', `${apiUrl}/api/product/admin/${productId}/price`);
+      htmx.process(form);
+
+      // Fetch existing data
+      try {
+        const res = await fetch(`${apiUrl}/api/product/${productId}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.data && result.data.product) {
+            const p = result.data.product;
+            document.getElementById('product-name-display').textContent = `Ubah jadwal harga untuk: ${p.name}`;
+            document.getElementById('current_price').value = p.current_price;
+            document.getElementById('current_price').disabled = true;
+          }
+        } else {
+          throw new Error('Produk tidak ditemukan');
+        }
+      } catch (err) {
+        console.error("Gagal mengambil data produk:", err);
+        document.getElementById('error-message').textContent = 'Gagal memuat data produk';
+        document.getElementById('error-message').classList.remove('d-none');
+      }
+
+      // Register Handlebars helper
+      if (!Handlebars.helpers.formatDate) {
+        Handlebars.registerHelper('formatDate', function(dateString) {
+          const d = new Date(dateString);
+          return d.toLocaleString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        });
+      }
+
+      // Fetch chronology for price history
+      try {
+        const res = await fetch(`${apiUrl}/api/product/admin/${productId}/prices`, {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const result = await res.json();
+          let prices = result.data.prices || [];
+            
+          const source = document.getElementById("price-history-tmpl").innerHTML;
+          const template = Handlebars.compile(source);
+          document.getElementById('price-history-table-body').innerHTML = template({ prices });
+        } else {
+          document.getElementById('price-history-table-body').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Gagal memuat riwayat</td></tr>';
+        }
+      } catch (err) {
+        console.error("Gagal mengambil riwayat harga:", err);
+        document.getElementById('price-history-table-body').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Gagal memuat riwayat</td></tr>';
+      }
+    });
+  </script>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr" is:inline></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      flatpickr("#effective_date", {
+        enableTime: true,
+        dateFormat: "Y-m-d\\TH:i",
+        time_24hr: true,
+        defaultDate: new Date(),
+        allowInput: true
+      });
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>

@@ -1,0 +1,236 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Chronology Dashboard">
+  <NavbarAdmin />
+
+  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center">
+        <div class="col-12 col-lg-10">
+          <div class="card bg-dark text-white" style="border-radius: 1rem">
+            <div class="card-body p-5">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-uppercase m-0">Dashboard Kronologi</h2>
+                <a href="/admin/dashboard" id="back-btn" class="btn btn-outline-light fw-bold">Kembali</a>
+              </div>
+              
+              <p class="text-white-50 mb-4" id="product-name-display">
+                Memuat data...
+              </p>
+
+              <!-- Income Summary Card -->
+              <div class="row mb-4" id="summary-cards" style="display: none;">
+                <div class="col-md-4 mb-3 mb-md-0">
+                  <div class="card bg-secondary text-white border-0 h-100">
+                    <div class="card-body py-3">
+                      <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Total Modal</h6>
+                      <h4 class="mb-0 fw-bold" id="total-modal">Rp 0</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                  <div class="card bg-secondary text-white border-0 h-100">
+                    <div class="card-body py-3">
+                      <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Total Penjualan</h6>
+                      <h4 class="mb-0 fw-bold" id="total-penjualan">Rp 0</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-secondary text-white border-0 h-100">
+                    <div class="card-body py-3">
+                      <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Laba/Rugi Bersih</h6>
+                      <h4 class="mb-0 fw-bold" id="laba-bersih">Rp 0</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
+              <div class="table-responsive mt-4">
+                <table class="table table-dark table-striped table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th scope="col">Tanggal & Waktu</th>
+                      <th scope="col">Tipe Event</th>
+                      <th scope="col">Kuantitas</th>
+                      <th scope="col">Harga / Modal</th>
+                      <th scope="col">Pihak Terkait</th>
+                    </tr>
+                  </thead>
+                  <tbody id="chronology-table-body">
+                    <tr>
+                      <td colspan="5" class="text-center">Memuat riwayat...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script id="chronology-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if chronology.length}}
+      {{#each chronology}}
+      <tr>
+        <td>{{formatDate date}}</td>
+        <td>
+          {{#if (eq log_type "STOCK_IN")}}
+            <span class="badge bg-success">Stok Masuk</span>
+          {{else if (eq log_type "STOCK_OUT")}}
+            <span class="badge bg-danger">Terjual</span>
+          {{else}}
+            <span class="badge bg-secondary">{{log_type}}</span>
+          {{/if}}
+        </td>
+        <td>
+          {{#if quantity}}
+            {{#if (eq log_type "STOCK_IN")}}
+              <span class="text-success fw-bold">+{{quantity}}</span>
+            {{else if (eq log_type "STOCK_OUT")}}
+              <span class="text-danger fw-bold">-{{quantity}}</span>
+            {{/if}}
+          {{else}}
+            -
+          {{/if}}
+        </td>
+        <td>
+          {{#if (eq log_type "STOCK_IN")}}
+            <span class="text-muted small">Modal:</span> Rp {{cost_price}}
+          {{else if (eq log_type "STOCK_OUT")}}
+            <span class="text-muted small">Jual:</span> Rp {{sell_price}}
+          {{else}}
+            -
+          {{/if}}
+        </td>
+        <td>
+          {{#if related_name}}
+            {{related_name}}
+          {{else}}
+            -
+          {{/if}}
+        </td>
+      </tr>
+      {{/each}}
+    {{else}}
+      <tr>
+        <td colspan="5" class="text-center text-muted">Belum ada riwayat tercatat.</td>
+      </tr>
+    {{/if}}
+  </script>
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+
+      if (!productId) {
+        document.getElementById('error-message').textContent = 'ID Produk tidak ditemukan';
+        document.getElementById('error-message').classList.remove('d-none');
+        document.getElementById('chronology-table-body').innerHTML = '';
+        return;
+      }
+
+      document.getElementById('back-btn').href = `/admin/edit-product?id=${productId}`;
+
+      // Register Handlebars helpers
+      Handlebars.registerHelper('formatDate', function(dateString) {
+        const d = new Date(dateString);
+        return d.toLocaleString('id-ID', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      });
+      Handlebars.registerHelper('eq', function(a, b) {
+        return a === b;
+      });
+
+      // Fetch existing data for name
+      try {
+        const res = await fetch(`${apiUrl}/api/product/${productId}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.data && result.data.product) {
+            document.getElementById('product-name-display').textContent = `Riwayat untuk: ${result.data.product.name}`;
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil nama produk:", err);
+      }
+
+      // Fetch chronology
+      try {
+        const res = await fetch(`${apiUrl}/api/product/admin/${productId}/chronology`, {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const result = await res.json();
+          const chronology = result.data.chronology || [];
+          
+          let totalModal = 0;
+          let totalPenjualan = 0;
+
+          chronology.forEach(item => {
+            if (item.log_type === 'STOCK_IN') {
+              totalModal += (item.quantity * item.cost_price);
+            } else if (item.log_type === 'STOCK_OUT') {
+              totalPenjualan += (item.quantity * item.sell_price);
+            }
+          });
+
+          const labaBersih = totalPenjualan - totalModal;
+
+          // Format currency
+          const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+          document.getElementById('total-modal').textContent = formatRp(totalModal);
+          document.getElementById('total-penjualan').textContent = formatRp(totalPenjualan);
+          document.getElementById('laba-bersih').textContent = formatRp(labaBersih);
+          
+          if (labaBersih > 0) {
+            document.getElementById('laba-bersih').classList.add('text-success');
+          } else if (labaBersih < 0) {
+            document.getElementById('laba-bersih').classList.add('text-danger');
+          }
+
+          document.getElementById('summary-cards').style.display = 'flex';
+
+          const source = document.getElementById("chronology-tmpl").innerHTML;
+          const template = Handlebars.compile(source);
+          document.getElementById('chronology-table-body').innerHTML = template({ chronology });
+        } else {
+          throw new Error('Gagal mengambil kronologi');
+        }
+      } catch (err) {
+        console.error("Gagal mengambil kronologi:", err);
+        document.getElementById('error-message').textContent = 'Gagal memuat data kronologi';
+        document.getElementById('error-message').classList.remove('d-none');
+        document.getElementById('chronology-table-body').innerHTML = '';
+      }
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>

@@ -22,6 +22,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           <div class="card shadow-sm mb-4" style="border-radius: 1rem">
             <div class="card-body">
               <h5 class="mb-4">Catat Stok Masuk</h5>
+              <p class="text-muted mb-4" id="product-name-display">
+                Memuat produk...
+              </p>
               
               <form id="stock-form"
                 hx-post={`${apiUrl}/api/product/admin/receive_stock`} 
@@ -31,12 +34,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 hx-target="#alert-container"
                 hx-on::after-request="if(event.detail.successful) this.reset();"
               >
-                <!-- Product Selection -->
-                <FormDropdown 
-                  label="Produk" id="product_id" name="product_id" required={true}
-                >
-                  <option value="" disabled selected>Memuat produk...</option>
-                </FormDropdown>
+                <!-- Product Selection (Hidden) -->
+                <input type="hidden" id="product_id" name="product_id" value="" />
 
                 <!-- Supplier Selection -->
                 <FormDropdown 
@@ -57,6 +56,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 />
 
                 <button type="submit" class="btn btn-primary w-100 fw-bold">Terima Stok</button>
+                <a href="/admin/dashboard" id="cancel-btn" class="btn btn-outline-dark w-100 fw-bold mt-2">Kembali</a>
               </form>
 
               <div id="alert-container" class="mt-4"></div>
@@ -93,25 +93,29 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         });
       }
 
-      const productSelect = document.getElementById("product_id");
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+
+      if (!productId) {
+        document.getElementById('product-name-display').textContent = 'Error: ID Produk tidak ditemukan';
+        return;
+      }
+
+      document.getElementById('product_id').value = productId;
+      document.getElementById('cancel-btn').href = `/admin/edit-product?id=${productId}`;
+
       const supplierSelect = document.getElementById("supplier_id");
 
-      // Fetch products
+      // Fetch product name
       try {
-        const res = await fetch(`${apiUrl}/api/product`);
+        const res = await fetch(`${apiUrl}/api/product/${productId}`);
         if (res.ok) {
           const result = await res.json();
-          productSelect.innerHTML = '<option value="" disabled selected>Pilih Produk</option>';
-          if (result && result.data && result.data.products) {
-            result.data.products.forEach(product => {
-              if(!product.is_service) {
-                const option = document.createElement("option");
-                option.value = product.id;
-                option.textContent = `${product.name} (Sisa Stok: ${product.stock})`;
-                productSelect.appendChild(option);
-              }
-            });
+          if (result && result.data && result.data.product) {
+            document.getElementById('product-name-display').textContent = `Terima stok untuk: ${result.data.product.name}`;
           }
+        } else {
+          document.getElementById('product-name-display').textContent = 'Error: Produk tidak ditemukan';
         }
       } catch (err) {
         console.error("Gagal mengambil data produk:", err);

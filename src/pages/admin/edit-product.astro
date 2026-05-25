@@ -1,0 +1,127 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NavbarAdmin from "../../components/NavbarAdmin.astro";
+import Footer from "../../components/Footer.astro";
+import FormField from "../../components/FormField.astro";
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+---
+
+<Layout title="Edit Product">
+  <NavbarAdmin />
+
+  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+    <div class="container py-5">
+      <div class="row d-flex justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+          <div class="card bg-dark text-white" style="border-radius: 1rem">
+            <div class="card-body p-5 text-center">
+              <h2 class="fw-bold mb-4 text-uppercase">Edit Product</h2>
+              <p class="text-white-50 mb-4">
+                Ubah nama, deskripsi, dan gambar produk.
+              </p>
+
+              <div class="d-flex justify-content-between mb-4">
+                <a id="btn-edit-price" href="#" class="btn btn-warning fw-bold flex-fill me-2">Ubah Harga</a>
+                <a id="btn-stock" href="#" class="btn btn-primary fw-bold flex-fill mx-2">Terima Stok</a>
+                <a id="btn-chronology" href="#" class="btn btn-info fw-bold flex-fill ms-2">Lihat Kronologi</a>
+              </div>
+
+              <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
+              <form
+                id="edit-product-form"
+                hx-encoding="multipart/form-data"
+                hx-request='{"credentials": true}'
+                hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
+                hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+              >
+                <!-- Name -->
+                <FormField 
+                  label="Nama Produk" id="name" name="name" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Description -->
+                <FormField 
+                  type="textarea" label="Deskripsi" id="description" name="description" required={true} 
+                  containerClass="form-outline form-white mb-4 text-start" 
+                  inputClass="form-control form-control-lg" 
+                />
+
+                <!-- Image Upload (Optional) -->
+                <FormField 
+                  type="file" label="Gambar Baru (Opsional)" id="image" name="image" accept="image/*" required={false} 
+                  containerClass="form-outline form-white mb-5 text-start" 
+                  inputClass="form-control form-control-lg" 
+                  helpText="Biarkan kosong jika tidak ingin mengubah gambar."
+                />
+
+                <button
+                  id="submit-btn"
+                  class="btn btn-outline-light btn-lg px-5 mt-3 w-100 fw-bold"
+                  type="submit"
+                >
+                  SIMPAN
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+
+  <script define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+
+      if (!productId) {
+        document.getElementById('error-message').textContent = 'ID Produk tidak ditemukan';
+        document.getElementById('error-message').classList.remove('d-none');
+        return;
+      }
+
+      // Set links for the other pages
+      document.getElementById('btn-edit-price').href = `/admin/edit-price?id=${productId}`;
+      document.getElementById('btn-stock').href = `/admin/stock?id=${productId}`;
+      document.getElementById('btn-chronology').href = `/admin/chronology?id=${productId}`;
+
+      // Set HTMX dynamic put URL
+      const form = document.getElementById("edit-product-form");
+      form.setAttribute('hx-put', `${apiUrl}/api/product/admin/${productId}`);
+      htmx.process(form);
+
+      // Fetch existing data
+      try {
+        const res = await fetch(`${apiUrl}/api/product/${productId}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.data && result.data.product) {
+            const p = result.data.product;
+            document.getElementById('name').value = p.name;
+            document.getElementById('description').value = p.description;
+          }
+        } else {
+          throw new Error('Produk tidak ditemukan');
+        }
+      } catch (err) {
+        console.error("Gagal mengambil data produk:", err);
+        document.getElementById('error-message').textContent = 'Gagal memuat data produk';
+        document.getElementById('error-message').classList.remove('d-none');
+      }
+    });
+  </script>
+
+  <style>
+    .gradient-custom {
+      background: #6a11cb;
+      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+    }
+  </style>
+</Layout>
