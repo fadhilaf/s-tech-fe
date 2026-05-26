@@ -77,7 +77,11 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                       <th scope="col">Harga (Rp)</th>
                     </tr>
                   </thead>
-                  <tbody id="price-history-table-body">
+                  <tbody id="price-history-table-body" 
+                         hx-ext="client-side-templates" 
+                         handlebars-template="price-history-tmpl"
+                         hx-trigger="load"
+                         hx-request='{"credentials": true}'>
                     <tr>
                       <td colspan="2" class="text-center">Memuat riwayat...</td>
                     </tr>
@@ -94,8 +98,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
   <Footer />
 
   <script id="price-history-tmpl" type="text/x-handlebars-template" is:raw>
-    {{#if prices.length}}
-      {{#each prices}}
+    {{#if data.prices.length}}
+      {{#each data.prices}}
       <tr>
         <td>{{formatDate effective_date}}</td>
         <td>Rp {{price}}</td>
@@ -107,6 +111,30 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       </tr>
     {{/if}}
   </script>
+
+  <script id="product-info-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if (is2xx status)}}
+      <p id="product-name-display" hx-swap-oob="true" class="text-white-50 mb-4">
+        Ubah jadwal harga untuk: {{data.product.name}}
+      </p>
+      <input id="current_price" hx-swap-oob="true" name="current_price" type="text" class="form-control form-control-lg bg-secondary text-white border-secondary" value="{{data.product.current_price}}" disabled />
+    {{else if (is4xx status)}}
+      <div id="error-message" hx-swap-oob="true" class="alert alert-danger" role="alert">
+        <strong>{{message}}</strong>
+      </div>
+    {{else}}
+      <div id="error-message" hx-swap-oob="true" class="alert alert-danger" role="alert">
+        <strong>Terjadi kesalahan saat memuat data produk</strong>
+      </div>
+    {{/if}}
+  </script>
+
+  <div id="product-fetcher"
+       hx-ext="client-side-templates"
+       handlebars-template="product-info-tmpl"
+       hx-trigger="load"
+       hx-swap="none"
+       class="d-none"></div>
 
   <script define:vars={{ apiUrl }}>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -121,32 +149,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
       document.getElementById('cancel-btn').href = `/admin/edit-product?id=${productId}`;
 
-      // Set HTMX dynamic post URL
-      const form = document.getElementById("edit-price-form");
-      form.setAttribute('hx-post', `${apiUrl}/api/product/admin/${productId}/price`);
-      htmx.process(form);
-
-      // Fetch existing data
-      try {
-        const res = await fetch(`${apiUrl}/api/product/${productId}`);
-        if (res.ok) {
-          const result = await res.json();
-          if (result && result.data && result.data.product) {
-            const p = result.data.product;
-            document.getElementById('product-name-display').textContent = `Ubah jadwal harga untuk: ${p.name}`;
-            document.getElementById('current_price').value = p.current_price;
-            document.getElementById('current_price').disabled = true;
-          }
-        } else {
-          throw new Error('Produk tidak ditemukan');
-        }
-      } catch (err) {
-        console.error("Gagal mengambil data produk:", err);
-        document.getElementById('error-message').textContent = 'Gagal memuat data produk';
-        document.getElementById('error-message').classList.remove('d-none');
-      }
-
-      // Register Handlebars helper
+      // Register Handlebars helper first!
       if (!Handlebars.helpers.formatDate) {
         Handlebars.registerHelper('formatDate', function(dateString) {
           const d = new Date(dateString);
@@ -160,25 +163,18 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         });
       }
 
-      // Fetch chronology for price history
-      try {
-        const res = await fetch(`${apiUrl}/api/product/admin/${productId}/prices`, {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const result = await res.json();
-          let prices = result.data.prices || [];
-            
-          const source = document.getElementById("price-history-tmpl").innerHTML;
-          const template = Handlebars.compile(source);
-          document.getElementById('price-history-table-body').innerHTML = template({ prices });
-        } else {
-          document.getElementById('price-history-table-body').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Gagal memuat riwayat</td></tr>';
-        }
-      } catch (err) {
-        console.error("Gagal mengambil riwayat harga:", err);
-        document.getElementById('price-history-table-body').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Gagal memuat riwayat</td></tr>';
-      }
+      // Set HTMX dynamic URLs and process
+      const productFetcher = document.getElementById("product-fetcher");
+      productFetcher.setAttribute('hx-get', `${apiUrl}/api/product/${productId}`);
+      htmx.process(productFetcher);
+
+      const form = document.getElementById("edit-price-form");
+      form.setAttribute('hx-post', `${apiUrl}/api/product/admin/${productId}/price`);
+      htmx.process(form);
+
+      const tbody = document.getElementById("price-history-table-body");
+      tbody.setAttribute('hx-get', `${apiUrl}/api/product/admin/${productId}/prices`);
+      htmx.process(tbody);
     });
   </script>
 
