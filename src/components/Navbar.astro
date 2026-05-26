@@ -29,6 +29,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           } else {
             localStorage.removeItem('isAdmin');
           }
+
+          if (typeof Handlebars !== 'undefined') {
+            Handlebars.registerHelper('isLoggedIn', () => true);
+          }
         } else {
           this.user = null;
           localStorage.removeItem('user');

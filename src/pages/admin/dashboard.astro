@@ -17,7 +17,16 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         <p class="lead fw-normal text-white-50 mb-0">Manajemen Produk</p>
 
         <!-- Search Form -->
-        <form id="search-form" class="d-flex mt-4" role="search">
+        <form 
+          id="search-form" 
+          class="d-flex mt-4" 
+          role="search"
+          hx-get={`${apiUrl}/api/product`}
+          hx-target="#products-container"
+          hx-ext="client-side-templates"
+          handlebars-template="dashboard-products-tmpl"
+          hx-indicator="#loading-spinner"
+        >
           <input
             id="search-input"
             class="form-control me-2"
@@ -42,6 +51,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       <div
         id="products-container"
         class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center"
+        hx-get={`${apiUrl}/api/product`}
+        hx-trigger="load"
+        hx-ext="client-side-templates"
+        handlebars-template="dashboard-products-tmpl"
       >
         <div class="text-center w-100" id="loading-spinner">
           <div class="spinner-border text-primary" role="status">
@@ -56,64 +69,31 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <ProductsTemplate />
 
+  <!-- bisa sekaligus pakai hx-swap-oob serta swap biasanya yg tidak dikasi tag itu, untuk ini productsPartial -->
+  <script id="dashboard-products-tmpl" type="text/x-handlebars-template" is:raw>
+    <h2 class="text-center" id="section-title" hx-swap-oob="true">
+      {{#if (getSearchQuery)}}Hasil pencarian produk: {{getSearchQuery}}{{else}}Daftar Produk{{/if}}
+    </h2>
+    <div class="m-4 text-center" id="search-stats" hx-swap-oob="true">
+      {{#if (getSearchQuery)}}<h5 class="text-muted">Total produk: {{#if data.products.length}}{{data.products.length}}{{else}}0{{/if}}</h5>{{/if}}
+    </div>
+    
+    {{> productsPartial }}
+  </script>
+
   <script define:vars={{ apiUrl }}>
     document.addEventListener("DOMContentLoaded", () => {
-      const productsContainer = document.getElementById("products-container");
-      const searchForm = document.getElementById("search-form");
-      const searchInput = document.getElementById("search-input");
-      const searchStats = document.getElementById("search-stats");
-      const sectionTitle = document.getElementById("section-title");
-      const loadingSpinner = document.getElementById("loading-spinner").outerHTML;
+      // Register Handlebars helpers
+      if (typeof Handlebars !== 'undefined') {
+        Handlebars.registerHelper('getSearchQuery', () => {
+          const searchInput = document.getElementById("search-input");
+          return searchInput ? searchInput.value.trim() : "";
+        });
 
-      const source = document.getElementById("products-tmpl").innerHTML;
-      const template = Handlebars.compile(source);
-
-      const renderProducts = (products, searchQuery) => {
-        const html = template({ data: { products: products || [] }, apiUrl, isAdmin: true });
-        productsContainer.innerHTML = html;
-
-        if (searchQuery) {
-          sectionTitle.innerText = `Hasil pencarian produk: ${searchQuery}`;
-          searchStats.innerHTML = `<h5 class="text-muted">Total produk: ${products ? products.length : 0}</h5>`;
-        } else {
-          sectionTitle.innerText = "Daftar Produk";
-          searchStats.innerHTML = "";
-        }
-      };
-
-      const fetchProducts = async (searchQuery = "") => {
-        productsContainer.innerHTML = loadingSpinner;
-        
-        try {
-          const url = searchQuery 
-            ? `${apiUrl}/api/product?search=${encodeURIComponent(searchQuery)}`
-            : `${apiUrl}/api/product`;
-            
-          const response = await fetch(url);
-          const result = await response.json();
-          
-          if (result && result.data && result.data.products) {
-            renderProducts(result.data.products, searchQuery);
-          } else {
-            renderProducts([], searchQuery);
-          }
-        } catch (error) {
-          console.error("Error fetching products:", error);
-          productsContainer.innerHTML = `
-            <div class="col-12 text-center text-danger">
-              <h3>Gagal mengambil data produk.</h3>
-            </div>
-          `;
-        }
-      };
-
-      fetchProducts();
-
-      searchForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        fetchProducts(query);
-      });
+        // Register ProductsTemplate as a partial
+        const source = document.getElementById("products-tmpl").innerHTML;
+        Handlebars.registerPartial("productsPartial", source);
+      }
     });
   </script>
 

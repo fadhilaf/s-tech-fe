@@ -9,7 +9,7 @@
     {{#each data.products}}
     <div class="col mb-5">
       <div class="card h-100">
-        <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
+        <img class="card-img-top" src="{{getApiUrl}}/public/img/{{image}}" alt="{{name}}" />
         <div class="card-body p-4">
           <div class="text-center">
             <h5 class="fw-bolder">{{name}}</h5>
@@ -31,14 +31,14 @@
               {{/if}}
             </p>
             
-            {{#if ../isAdmin}}
+            {{#if (isAdmin)}}
             <!-- Admin Actions -->
             <a class="btn btn-outline-dark mt-auto" href="/admin/edit-product?id={{id}}">
               Edit
             </a>
             {{else}}
             <!-- User Actions -->
-              {{#if ../isLoggedIn}}
+              {{#if (isLoggedIn)}}
               <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
                 Pesan
               </a>

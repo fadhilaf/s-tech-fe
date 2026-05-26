@@ -10,7 +10,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       });
       const data = await response.json();
       if (data && data.data && data.data.user && data.data.user.is_admin) {
+
         this.isAdmin = true;
+
+        if (typeof Handlebars !== 'undefined') {
+            Handlebars.registerHelper('isAdmin', () => true);
+        }
+
       } else {
         window.location.href = '/admin';
       }

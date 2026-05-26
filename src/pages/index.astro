@@ -18,8 +18,17 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           Cari Apapun Jadi Mudah di Situs Jual Beli Terlengkap!
         </p>
 
-        <!-- Vanilla JS form to fetch products with search parameter -->
-        <form id="search-form" class="d-flex mt-4" role="search">
+        <!-- HTMX form to fetch products with search parameter -->
+        <form 
+          id="search-form" 
+          class="d-flex mt-4" 
+          role="search"
+          hx-get={`${apiUrl}/api/product`}
+          hx-target="#products-container"
+          hx-ext="client-side-templates"
+          handlebars-template="index-products-tmpl"
+          hx-indicator="#loading-spinner"
+        >
           <input
             id="search-input"
             class="form-control me-2"
@@ -40,10 +49,14 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
     <h2 class="text-center" id="section-title">Daftar Produk</h2>
 
     <div class="container px-4 px-lg-5 mt-5">
-      <!-- Container for Vanilla JS to load products into -->
+      <!-- Container for HTMX to load products into -->
       <div
         id="products-container"
         class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center"
+        hx-get={`${apiUrl}/api/product`}
+        hx-trigger="load"
+        hx-ext="client-side-templates"
+        handlebars-template="index-products-tmpl"
       >
         <div class="text-center w-100" id="loading-spinner">
           <div class="spinner-border text-primary" role="status">
@@ -58,60 +71,27 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <ProductsTemplate />
 
+  <script id="index-products-tmpl" type="text/x-handlebars-template" is:raw>
+    <h2 class="text-center" id="section-title" hx-swap-oob="true">
+      {{#if (getSearchQuery)}}Hasil pencarian produk: {{getSearchQuery}}{{else}}Daftar Produk{{/if}}
+    </h2>
+    
+    {{> productsPartial }}
+  </script>
+
   <script define:vars={{ apiUrl }}>
     document.addEventListener("DOMContentLoaded", () => {
-      const productsContainer = document.getElementById("products-container");
-      const searchForm = document.getElementById("search-form");
-      const searchInput = document.getElementById("search-input");
-      const loadingSpinner = document.getElementById("loading-spinner").outerHTML;
+      // Register Handlebars helpers
+      if (typeof Handlebars !== 'undefined') {
+        Handlebars.registerHelper('getSearchQuery', () => {
+          const searchInput = document.getElementById("search-input");
+          return searchInput ? searchInput.value.trim() : "";
+        });
 
-      // Compile the Handlebars template once
-      const source = document.getElementById("products-tmpl").innerHTML;
-      const template = Handlebars.compile(source);
-
-      const renderProducts = (products) => {
-        // Check if user is logged in from localStorage
-        const isLoggedIn = !!localStorage.getItem('user');
-        // Pass isAdmin: false for public view
-        const html = template({ data: { products }, apiUrl, isAdmin: false, isLoggedIn });
-        productsContainer.innerHTML = html;
-      };
-
-      const fetchProducts = async (searchQuery = "") => {
-        productsContainer.innerHTML = loadingSpinner;
-        
-        try {
-          const url = searchQuery 
-            ? `${apiUrl}/api/product?search=${encodeURIComponent(searchQuery)}`
-            : `${apiUrl}/api/product`;
-            
-          const response = await fetch(url);
-          const result = await response.json();
-          
-          if (result && result.data && result.data.products) {
-            renderProducts(result.data.products);
-          } else {
-            renderProducts([]);
-          }
-        } catch (error) {
-          console.error("Error fetching products:", error);
-          productsContainer.innerHTML = `
-            <div class="col-12 text-center text-danger">
-              <h3>Gagal mengambil data produk.</h3>
-            </div>
-          `;
-        }
-      };
-
-      // Initial load
-      fetchProducts();
-
-      // Handle search submit
-      searchForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        fetchProducts(query);
-      });
+        // Register ProductsTemplate as a partial
+        const source = document.getElementById("products-tmpl").innerHTML;
+        Handlebars.registerPartial("productsPartial", source);
+      }
     });
   </script>
 </Layout>
