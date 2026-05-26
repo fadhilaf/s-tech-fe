@@ -1,0 +1,100 @@
+---
+const { action, method="POST", hxSwap="none", formId="iodine-form" } = Astro.props;
+---
+
+<form 
+    id={formId}
+    x-data="iodineForm()"
+    @submit="submit($event)"
+    @htmx:before-request.camel="clearErrors()"
+    @htmx:after-request.camel="handleResponse($event)"
+    hx-post={action}
+    hx-swap="none"
+    hx-ext="response-targets"
+    hx-target-4xx="this"
+    hx-target-5xx="this"
+    hx-on::before-request="const btn = this.querySelector('button[type=submit]'); if(btn) { btn.disabled = true; btn.dataset.original = btn.innerText; btn.innerText = 'Loading...'; }"
+    hx-on::after-request="const btn = this.querySelector('button[type=submit]'); if(btn) { btn.disabled = false; btn.innerText = btn.dataset.original; }"
+>
+    <!-- Iodine JS for Validation -->
+    <script src="https://cdn.jsdelivr.net/npm/@kingshott/iodine@latest/dist/iodine.min.js" is:inline></script>
+    
+    <!-- Global Server Error Fallback -->
+    <template x-if="serverError">
+      <div class="alert alert-danger text-start fw-bold mb-4" role="alert" x-text="serverError"></div>
+    </template>
+
+    <slot />
+</form>
+
+<script is:inline>
+    document.addEventListener('alpine:init', () => {
+
+        if (!Alpine.data('iodineForm')) {
+            Alpine.data('iodineForm', () => ({
+                errors: {},
+                serverError: '',
+                inputElements: [],
+                init() {
+                    this.inputElements = [...this.$el.querySelectorAll('[data-rules]')];
+                    this.inputElements.forEach(el => {
+                        el.addEventListener('blur', () => this.validate(el));
+                        el.addEventListener('input', () => {
+                            if (this.errors[el.name]) this.validate(el);
+                        });
+                    });
+
+                    // Register custom Iodine rules
+                    Iodine.rule('matchingPassword', (value) => value === this.inputElements.find(el => el.name === 'password').value);
+                    Iodine.setErrorMessage('matchingPassword', 'Password confirmation must match password');
+
+                },
+                validate(el) {
+                    if (typeof Iodine === 'undefined' || !el.dataset.rules) return;
+                    try {
+                        const result = Iodine.assert(el.value, JSON.parse(el.dataset.rules));
+                        if (result.valid !== false) {
+                            delete this.errors[el.name];
+                        } else {
+                            this.errors[el.name] = result.error;
+                        }
+                    } catch (e) {
+                        console.error('Iodine Validation Error:', e);
+                    }
+                },
+                validateAll() {
+                    this.inputElements.forEach(el => this.validate(el));
+                    return Object.keys(this.errors).length === 0;
+                },
+                submit(event) {
+                    if (!this.validateAll()) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation(); // Prevent HTMX from firing
+                    }
+                },
+                clearErrors() {
+                    this.errors = {};
+                    this.serverError = '';
+                },
+                handleResponse(event) {
+                    if (event.detail.xhr.status >= 400 && event.detail.xhr.status < 500) {
+                        try {
+                            const res = JSON.parse(event.detail.xhr.response);
+                            this.errors = res.errors || {};
+                            if (Object.keys(this.errors).length === 0 && res.message) {
+                                this.serverError = res.message;
+                            }
+                        } catch(e) {}
+                    } else if (event.detail.xhr.status >= 500) {
+                        try {
+                            const res = JSON.parse(event.detail.xhr.response);
+                            this.serverError = ( res.message || 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi') + ', Code : ' + event.detail.xhr.status;
+                        } catch(e) {
+                            this.serverError = ( event.detail.xhr.response || 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi') + ', Code : ' + event.detail.xhr.status;
+                        }
+                    }
+                },
+            }));
+        }
+    });
+</script>
