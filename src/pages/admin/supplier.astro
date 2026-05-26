@@ -24,7 +24,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
               <form 
                 hx-post={`${apiUrl}/api/product/admin/supplier`} 
                 hx-request='{"credentials": true}'
-                hx-on::after-request="if(event.detail.successful) { this.reset(); fetchSuppliers(); }"
+                hx-on::after-request="if(event.detail.successful) { this.reset(); htmx.trigger('#suppliers-container', 'reload'); }"
                 hx-swap="none"
                 class="d-flex"
               >
@@ -35,7 +35,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           </div>
 
           <!-- Suppliers List -->
-          <div id="suppliers-container">
+          <div id="suppliers-container"
+               hx-get={`${apiUrl}/api/product/admin/supplier`}
+               hx-trigger="load, reload"
+               hx-ext="client-side-templates"
+               handlebars-template="suppliers-tmpl"
+               hx-request='{"credentials": true}'
+               hx-on:htmx:response-error="if(event.detail.xhr.status === 401 || event.detail.xhr.status === 403) window.location.href = '/admin'">
             <div class="text-center mt-5">
               <div class="spinner-border text-light" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -51,85 +57,40 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
   <Footer />
 
   <script id="suppliers-tmpl" type="text/x-handlebars-template" is:raw>
-    {{#if data.suppliers.length}}
-      {{#each data.suppliers}}
-      <div class="card mt-2 shadow-sm" style="border-radius: 1rem">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="mb-0 fw-bold">{{name}}</h6>
-            <small class="text-muted">ID: {{id}}</small>
+    {{#if (is2xx status)}}
+      {{#if data.suppliers.length}}
+        {{#each data.suppliers}}
+        <div class="card mt-2 shadow-sm" style="border-radius: 1rem">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-0 fw-bold">{{name}}</h6>
+              <small class="text-muted">ID: {{id}}</small>
+            </div>
+            <form 
+              hx-delete="{{getApiUrl}}/api/product/admin/supplier/{{id}}" 
+              hx-request='{"credentials": true}'
+              hx-confirm="Yakin ingin menghapus supplier ini?"
+              hx-on::after-request="if(event.detail.successful) { htmx.trigger('#suppliers-container', 'reload'); } else { alert('Gagal menghapus. Mungkin supplier ini masih terikat dengan riwayat stok produk.'); }"
+            >
+              <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+            </form>
           </div>
-          <form 
-            hx-delete="{{../apiUrl}}/api/product/admin/supplier/{{id}}" 
-            hx-request='{"credentials": true}'
-            hx-confirm="Yakin ingin menghapus supplier ini?"
-            hx-on::after-request="if(event.detail.successful) { fetchSuppliers(); } else { alert('Gagal menghapus. Mungkin supplier ini masih terikat dengan riwayat stok produk.'); }"
-          >
-            <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
-          </form>
         </div>
-      </div>
-      {{/each}}
+        {{/each}}
+      {{else}}
+        <div class="card mt-3" style="border-radius: 1rem">
+          <div class="card-body text-center">
+            <h5 class="mb-0">Belum ada data supplier.</h5>
+          </div>
+        </div>
+      {{/if}}
     {{else}}
       <div class="card mt-3" style="border-radius: 1rem">
-        <div class="card-body text-center">
-          <h5 class="mb-0">Belum ada data supplier.</h5>
+        <div class="card-body text-center text-danger">
+          <h5 class="mb-0">{{message}}</h5>
         </div>
       </div>
     {{/if}}
-  </script>
-
-  <script define:vars={{ apiUrl }}>
-    let fetchSuppliers;
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const container = document.getElementById("suppliers-container");
-      const source = document.getElementById("suppliers-tmpl").innerHTML;
-      const template = Handlebars.compile(source);
-
-      const renderSuppliers = (suppliers) => {
-        const html = template({ data: { suppliers: suppliers || [] }, apiUrl });
-        container.innerHTML = html;
-        htmx.process(container);
-      };
-
-      fetchSuppliers = async () => {
-        try {
-          const response = await fetch(`${apiUrl}/api/product/admin/supplier`, {
-            credentials: 'include'
-          });
-          
-          if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-              window.location.href = "/admin";
-              return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          if (result && result.data && result.data.suppliers) {
-            renderSuppliers(result.data.suppliers);
-          } else {
-            renderSuppliers([]);
-          }
-        } catch (error) {
-          console.error("Error fetching suppliers:", error);
-          container.innerHTML = `
-            <div class="card mt-3" style="border-radius: 1rem">
-              <div class="card-body text-center text-danger">
-                <h5>Gagal mengambil data supplier.</h5>
-              </div>
-            </div>
-          `;
-        }
-      };
-
-      // Expose to window for HTMX callbacks
-      window.fetchSuppliers = fetchSuppliers;
-      
-      fetchSuppliers();
-    });
   </script>
 
   <style>

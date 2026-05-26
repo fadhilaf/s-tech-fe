@@ -22,21 +22,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       if (response.ok) {
         const data = await response.json();
         if (data && data.data && data.data.user) {
+
           this.user = data.data.user;
           localStorage.setItem('user', JSON.stringify(this.user));
-          if (this.user.is_admin) {
-            localStorage.setItem('isAdmin', 'true');
-          } else {
-            localStorage.removeItem('isAdmin');
-          }
 
-          if (typeof Handlebars !== 'undefined') {
-            Handlebars.registerHelper('isLoggedIn', () => true);
-          }
         } else {
           this.user = null;
           localStorage.removeItem('user');
-          localStorage.removeItem('isAdmin');
         }
       } else {
         this.user = null;

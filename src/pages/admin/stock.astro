@@ -22,16 +22,21 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           <div class="card shadow-sm mb-4" style="border-radius: 1rem">
             <div class="card-body">
               <h5 class="mb-4">Catat Stok Masuk</h5>
-              <p class="text-muted mb-4" id="product-name-display">
+              <p class="text-muted mb-4" id="product-name-display"
+                hx-trigger="load"
+                hx-ext="client-side-templates"
+                handlebars-template="product-name-tmpl"
+              >
                 Memuat produk...
               </p>
               
               <form id="stock-form"
                 hx-post={`${apiUrl}/api/product/admin/receive_stock`} 
                 hx-request='{"credentials": true}'
-                hx-ext="client-side-templates"
+                hx-ext="response-targets, client-side-templates"
                 handlebars-template="alert-tmpl"
-                hx-target="#alert-container"
+                hx-target-4xx="#alert-container"
+                hx-target-5xx="#alert-container"
                 hx-on::after-request="if(event.detail.successful) this.reset();"
               >
                 <!-- Product Selection (Hidden) -->
@@ -40,6 +45,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 <!-- Supplier Selection -->
                 <FormDropdown 
                   label="Supplier" id="supplier_id" name="supplier_id" required={true}
+                  hx-get={`${apiUrl}/api/product/admin/supplier`}
+                  hx-trigger="load"
+                  hx-ext="response-targets, client-side-templates"
+                  handlebars-template="supplier-options-tmpl"
+                  hx-target-4xx="this"
+                  hx-target-5xx="this"
+                  hx-request='{"credentials": true}'
                 >
                   <option value="" disabled selected>Memuat supplier...</option>
                 </FormDropdown>
@@ -58,8 +70,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 <button type="submit" class="btn btn-primary w-100 fw-bold">Terima Stok</button>
                 <a href="/admin/dashboard" id="cancel-btn" class="btn btn-outline-dark w-100 fw-bold mt-2">Kembali</a>
               </form>
-
-              <div id="alert-container" class="mt-4"></div>
+              
+              <div class="mt-4">
+                <div id="alert-container" class="mt-4"></div>
+              </div>
             </div>
           </div>
 
@@ -84,14 +98,31 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
     {{/if}}
   </script>
 
+  <script id="supplier-options-tmpl" type="text/x-handlebars-template" is:raw>
+    <option value="" disabled selected>Pilih Supplier</option>
+    {{#if (is2xx status)}}
+      <div id="error-message" hx-swap-oob="true" class="alert alert-danger d-none" role="alert"></div>
+      {{#each data.suppliers}}
+        <option value="{{id}}">{{name}}</option>
+      {{/each}}
+    {{else}}
+        <div id="alert-container" hx-swap-oob="true" class="alert alert-danger" role="alert">
+          Loading Supplier Error: {{message}}
+        </div>
+        <option value="" disabled selected>{{message}}</option>
+    {{/if}}
+  </script>
+
+  <script id="product-name-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if (is2xx status)}}
+      Terima stok untuk: <strong>{{data.product.name}}</strong>
+    {{else}}
+      Error: Produk tidak ditemukan
+    {{/if}}
+  </script>
+
   <script define:vars={{ apiUrl }}>
-    document.addEventListener("DOMContentLoaded", async () => {
-      // Register Handlebars helper for the alert template
-      if (!Handlebars.helpers.eq) {
-        Handlebars.registerHelper('eq', function(arg1, arg2) {
-          return arg1 === arg2;
-        });
-      }
+    document.addEventListener("DOMContentLoaded", () => {
 
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
@@ -104,43 +135,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       document.getElementById('product_id').value = productId;
       document.getElementById('cancel-btn').href = `/admin/edit-product?id=${productId}`;
 
-      const supplierSelect = document.getElementById("supplier_id");
-
-      // Fetch product name
-      try {
-        const res = await fetch(`${apiUrl}/api/product/${productId}`);
-        if (res.ok) {
-          const result = await res.json();
-          if (result && result.data && result.data.product) {
-            document.getElementById('product-name-display').textContent = `Terima stok untuk: ${result.data.product.name}`;
-          }
-        } else {
-          document.getElementById('product-name-display').textContent = 'Error: Produk tidak ditemukan';
-        }
-      } catch (err) {
-        console.error("Gagal mengambil data produk:", err);
-      }
-
-      // Fetch suppliers
-      try {
-        const res = await fetch(`${apiUrl}/api/product/admin/supplier`, {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const result = await res.json();
-          supplierSelect.innerHTML = '<option value="" disabled selected>Pilih Supplier</option>';
-          if (result && result.data && result.data.suppliers) {
-            result.data.suppliers.forEach(supplier => {
-              const option = document.createElement("option");
-              option.value = supplier.id;
-              option.textContent = supplier.name;
-              supplierSelect.appendChild(option);
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Gagal mengambil data supplier:", err);
-      }
+      const nameDisplay = document.getElementById("product-name-display");
+      nameDisplay.setAttribute('hx-get', `${apiUrl}/api/product/${productId}`);
+      htmx.process(nameDisplay);
     });
   </script>
 

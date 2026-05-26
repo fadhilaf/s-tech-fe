@@ -29,43 +29,17 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
               <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
 
-              <form
-                id="edit-product-form"
-                hx-encoding="multipart/form-data"
-                hx-request='{"credentials": true}'
-                hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
-                hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+              <div id="form-container"
+                hx-trigger="load"
+                hx-ext="client-side-templates"
+                handlebars-template="product-form-tmpl"
               >
-                <!-- Name -->
-                <FormField 
-                  label="Nama Produk" id="name" name="name" required={true} 
-                  containerClass="form-outline form-white mb-4 text-start" 
-                  inputClass="form-control form-control-lg" 
-                />
-
-                <!-- Description -->
-                <FormField 
-                  type="textarea" label="Deskripsi" id="description" name="description" required={true} 
-                  containerClass="form-outline form-white mb-4 text-start" 
-                  inputClass="form-control form-control-lg" 
-                />
-
-                <!-- Image Upload (Optional) -->
-                <FormField 
-                  type="file" label="Gambar Baru (Opsional)" id="image" name="image" accept="image/*" required={false} 
-                  containerClass="form-outline form-white mb-5 text-start" 
-                  inputClass="form-control form-control-lg" 
-                  helpText="Biarkan kosong jika tidak ingin mengubah gambar."
-                />
-
-                <button
-                  id="submit-btn"
-                  class="btn btn-outline-light btn-lg px-5 mt-3 w-100 fw-bold"
-                  type="submit"
-                >
-                  SIMPAN
-                </button>
-              </form>
+                <div class="text-center w-100 my-5">
+                  <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -75,8 +49,51 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <Footer />
 
+  <script id="product-form-tmpl" type="text/x-handlebars-template" is:raw>
+    {{#if (is2xx status)}}
+      {{#with data.product}}
+      <form
+        id="edit-product-form"
+        hx-put="{{getApiUrl}}/api/product/admin/{{id}}"
+        hx-encoding="multipart/form-data"
+        hx-request='{"credentials": true}'
+        hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
+        hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+      >
+        <div class="form-outline form-white mb-4 text-start">
+          <label class="form-label" for="name">Nama Produk</label>
+          <input type="text" id="name" name="name" class="form-control form-control-lg" required value="{{name}}" />
+        </div>
+
+        <div class="form-outline form-white mb-4 text-start">
+          <label class="form-label" for="description">Deskripsi</label>
+          <textarea id="description" name="description" class="form-control form-control-lg" rows="3" required>{{description}}</textarea>
+        </div>
+
+        <div class="form-outline form-white mb-5 text-start">
+          <label class="form-label" for="image">Gambar Baru (Opsional)</label>
+          <input type="file" id="image" name="image" class="form-control form-control-lg" accept="image/*" />
+          <small class="text-muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
+        </div>
+
+        <button
+          id="submit-btn"
+          class="btn btn-outline-light btn-lg px-5 mt-3 w-100 fw-bold"
+          type="submit"
+        >
+          SIMPAN
+        </button>
+      </form>
+      {{/with}}
+    {{else}}
+      <div class="alert alert-danger" role="alert">
+        {{message}}
+      </div>
+    {{/if}}
+  </script>
+
   <script define:vars={{ apiUrl }}>
-    document.addEventListener("DOMContentLoaded", async () => {
+    document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
 
@@ -91,29 +108,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       document.getElementById('btn-stock').href = `/admin/stock?id=${productId}`;
       document.getElementById('btn-chronology').href = `/admin/chronology?id=${productId}`;
 
-      // Set HTMX dynamic put URL
-      const form = document.getElementById("edit-product-form");
-      form.setAttribute('hx-put', `${apiUrl}/api/product/admin/${productId}`);
-      htmx.process(form);
-
-      // Fetch existing data
-      try {
-        const res = await fetch(`${apiUrl}/api/product/${productId}`);
-        if (res.ok) {
-          const result = await res.json();
-          if (result && result.data && result.data.product) {
-            const p = result.data.product;
-            document.getElementById('name').value = p.name;
-            document.getElementById('description').value = p.description;
-          }
-        } else {
-          throw new Error('Produk tidak ditemukan');
-        }
-      } catch (err) {
-        console.error("Gagal mengambil data produk:", err);
-        document.getElementById('error-message').textContent = 'Gagal memuat data produk';
-        document.getElementById('error-message').classList.remove('d-none');
-      }
+      const formContainer = document.getElementById("form-container");
+      formContainer.setAttribute('hx-get', `${apiUrl}/api/product/${productId}`);
+      htmx.process(formContainer);
     });
   </script>
 

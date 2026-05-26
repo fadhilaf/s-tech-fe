@@ -5,7 +5,8 @@ const {
   name, 
   required = false, 
   containerClass = "mb-3",
-  selectClass = "form-select"
+  selectClass = "form-select",
+  ...rest
 } = Astro.props;
 ---
 
@@ -16,6 +17,7 @@ const {
     name={name}
     class={selectClass}
     required={required}
+    {...rest}
   >
     <slot />
   </select>

@@ -60,9 +60,15 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                   label="Supplier" id="supplier_id" name="supplier_id" required={true}
                   containerClass="form-outline form-white mb-4 text-start"
                   selectClass="form-select form-select-lg"
+                  hx-get={`${apiUrl}/api/product/admin/supplier`}
+                  hx-trigger="load"
+                  hx-ext="response-targets, client-side-templates"
+                  hx-target-4xx="this"
+                  hx-target-5xx="this"
+                  handlebars-template="supplier-options-tmpl"
+                  hx-request='{"credentials": true}'
                 >
-                  <option value="" disabled selected>Pilih Supplier</option>
-                  <!-- Options populated by JS -->
+                  <option value="" disabled selected>Loading Supplier...</option>
                 </FormDropdown>
 
                 <!-- Description -->
@@ -104,29 +110,19 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <Footer />
 
-  <script define:vars={{ apiUrl }}>
-    document.addEventListener("DOMContentLoaded", async () => {
-      // Fetch suppliers to populate dropdown
-      const supplierSelect = document.getElementById("supplier_id");
-      try {
-        const res = await fetch(`${apiUrl}/api/product/admin/supplier`, {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const result = await res.json();
-          if (result && result.data && result.data.suppliers) {
-            result.data.suppliers.forEach(supplier => {
-              const option = document.createElement("option");
-              option.value = supplier.id;
-              option.textContent = supplier.name;
-              supplierSelect.appendChild(option);
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Gagal mengambil data supplier:", err);
-      }
-    });
+  <script id="supplier-options-tmpl" type="text/x-handlebars-template" is:raw>
+    <option value="" disabled selected>Pilih Supplier</option>
+    {{#if (is2xx status)}}
+      <div id="error-message" hx-swap-oob="true" class="alert alert-danger d-none" role="alert"></div>
+      {{#each data.suppliers}}
+        <option value="{{id}}">{{name}}</option>
+      {{/each}}
+    {{else}}
+        <div id="error-message" hx-swap-oob="true" class="alert alert-danger" role="alert">
+          Loading Supplier Error: {{message}}
+        </div>
+        <option value="" disabled selected>{{message}}</option>
+    {{/if}}
   </script>
 
   <style>

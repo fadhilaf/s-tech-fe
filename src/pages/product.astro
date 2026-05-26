@@ -37,74 +37,81 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
   <Footer />
 
   <script id="product-tmpl" type="text/x-handlebars-template" is:raw>
-    {{#if data.product}}
-      {{#with data.product}}
-      <div class="col mb-5 text-start">
-        <div class="card">
-          <!-- Product image-->
-          <img class="card-img-top" src="{{../apiUrl}}/public/img/{{image}}" alt="{{name}}" />
-          <!-- Product details-->
-          <div class="card-body p-4">
-            <div class="text-center">
-              <!-- Product name-->
-              <h5 class="fw-bolder">{{name}}</h5>
-              <!-- Product price-->
-              {{#if is_service}}
-              Rp {{current_price}} / Jam
-              {{else}}
-              Rp {{current_price}}
-              {{/if}}
+    {{#if (is2xx status)}}
+      {{#if data.product}}
+        {{#with data.product}}
+        <div class="col mb-5 text-start">
+          <div class="card">
+            <!-- Product image-->
+            <img class="card-img-top" src="{{getApiUrl}}/public/img/{{image}}" alt="{{name}}" />
+            <!-- Product details-->
+            <div class="card-body p-4">
+              <div class="text-center">
+                <!-- Product name-->
+                <h5 class="fw-bolder">{{name}}</h5>
+                <!-- Product price-->
+                {{#if is_service}}
+                Rp {{current_price}} / Jam
+                {{else}}
+                Rp {{current_price}}
+                {{/if}}
+              </div>
+              <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">Deskripsi: {{description}}</p>
             </div>
-            <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">Deskripsi: {{description}}</p>
-          </div>
-          <!-- Product actions-->
-          <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-            <div class="text-center text-muted small">
-              {{#if is_service}}
-              Kuota: {{stock}} Tim
-              {{else}}
-              Stok: {{stock}} Unit
-              {{/if}}
+            <!-- Product actions-->
+            <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+              <div class="text-center text-muted small">
+                {{#if is_service}}
+                Kuota: {{stock}} Tim
+                {{else}}
+                Stok: {{stock}} Unit
+                {{/if}}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <form hx-post="{{../apiUrl}}/api/order" 
-            hx-request='{"credentials": true}'
-            hx-ext="response-targets, client-side-templates"
-            handlebars-template="response-tmpl"
-            hx-target-4*="#client-error-message"
-            hx-target-5*="#server-error-message"
-            id="order-form">
-        <input type="hidden" id="product_id" name="product_id" value="{{id}}">
-        
-        {{#if is_service}}
-        <input type="hidden" id="quantity" name="quantity" value="1" />
-        {{else}}
-        <div class="form-outline form-white mb-4 mt-4">
-          <input style="background-color: #dfe9f5;" type="number" id="quantity" name="quantity"
-            class="form-control form-control-lg" placeholder="Kuantitas pemesanan" required />
+        <form hx-post="{{getApiUrl}}/api/order" 
+              hx-request='{"credentials": true}'
+              hx-ext="response-targets, client-side-templates"
+              handlebars-template="response-tmpl"
+              hx-target-4*="#client-error-message"
+              hx-target-5*="#server-error-message"
+              id="order-form">
+          <input type="hidden" id="product_id" name="product_id" value="{{id}}">
+          
+          {{#if is_service}}
+          <input type="hidden" id="quantity" name="quantity" value="1" />
+          {{else}}
+          <div class="form-outline form-white mb-4 mt-4">
+            <input style="background-color: #dfe9f5;" type="number" id="quantity" name="quantity"
+              class="form-control form-control-lg" placeholder="Kuantitas pemesanan" required />
+          </div>
+          {{/if}}
+          
+          <div class="form-outline form-white mb-4">
+            <textarea style="background-color: #dfe9f5;" id="description" name="description"
+              class="form-control form-control-lg" placeholder="Deskripsi pemesanan"></textarea>
+          </div>
+
+          <div id="client-error-message" class="mb-3"></div>
+
+          <button class="btn btn-primary btn-lg px-5" type="submit">
+            Pesan
+          </button>
+
+          <div id="server-error-message" class="mb-3"></div>
+        </form>
+        {{/with}}
+      {{else}}
+        <div class="alert alert-danger" role="alert">
+          Tidak ada produk yang dipilih atau produk tidak ditemukan.
         </div>
-        {{/if}}
-        
-        <div class="form-outline form-white mb-4">
-          <textarea style="background-color: #dfe9f5;" id="description" name="description"
-            class="form-control form-control-lg" placeholder="Deskripsi pemesanan"></textarea>
-        </div>
-
-        <div id="client-error-message" class="mb-3"></div>
-
-        <button class="btn btn-primary btn-lg px-5" type="submit">
-          Pesan
-        </button>
-
-        <div id="server-error-message" class="mb-3"></div>
-      </form>
-      {{/with}}
+        <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
+      {{/if}}
     {{else}}
       <div class="alert alert-danger" role="alert">
-        Tidak ada produk yang dipilih atau produk tidak ditemukan.
+        {{message}}
       </div>
       <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
     {{/if}}
@@ -112,44 +119,23 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
   <script define:vars={{ apiUrl }}>
     document.addEventListener("DOMContentLoaded", () => {
-      const productContainer = document.getElementById("product-container");
-      const source = document.getElementById("product-tmpl").innerHTML;
-      const template = Handlebars.compile(source);
-
-      const renderProduct = (product) => {
-        const html = template({ data: { product }, apiUrl });
-        productContainer.innerHTML = html;
-        htmx.process(productContainer);
-      };
-
-      const fetchProduct = async (id) => {
-        try {
-          const response = await fetch(`${apiUrl}/api/product/${id}`);
-          const result = await response.json();
-          
-          if (result && result.data && result.data.product) {
-            renderProduct(result.data.product);
-          } else {
-            renderProduct(null);
-          }
-        } catch (error) {
-          console.error("Error fetching product:", error);
-          productContainer.innerHTML = `
-            <div class="alert alert-danger" role="alert">
-              Gagal mengambil data produk.
-            </div>
-            <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
-          `;
-        }
-      };
-
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
+      const productContainer = document.getElementById("product-container");
       
       if (productId) {
-        fetchProduct(productId);
+        productContainer.setAttribute('hx-get', `${apiUrl}/api/product/${productId}`);
+        productContainer.setAttribute('hx-trigger', 'load');
+        productContainer.setAttribute('hx-ext', 'client-side-templates');
+        productContainer.setAttribute('handlebars-template', 'product-tmpl');
+        htmx.process(productContainer);
       } else {
-        renderProduct(null);
+        productContainer.innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            Tidak ada produk yang dipilih.
+          </div>
+          <a href="/" class="btn btn-outline-primary mt-3">Kembali ke Beranda</a>
+        `;
       }
     });
   </script>

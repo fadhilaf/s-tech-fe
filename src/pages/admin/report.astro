@@ -25,12 +25,12 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
               </p>
 
               <!-- Income Summary Card -->
-              <div class="row mb-4" id="summary-cards" style="display: none;">
+              <div class="row mb-4" id="summary-cards">
                 <div class="col-md-4 mb-3 mb-md-0">
                   <div class="card bg-secondary text-white border-0 h-100">
                     <div class="card-body py-3">
                       <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Total Modal Keseluruhan</h6>
-                      <h4 class="mb-0 fw-bold" id="total-modal">Rp 0</h4>
+                      <h4 class="mb-0 fw-bold" id="total-modal">Memuat...</h4>
                     </div>
                   </div>
                 </div>
@@ -38,7 +38,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                   <div class="card bg-secondary text-white border-0 h-100">
                     <div class="card-body py-3">
                       <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Total Penjualan Keseluruhan</h6>
-                      <h4 class="mb-0 fw-bold" id="total-penjualan">Rp 0</h4>
+                      <h4 class="mb-0 fw-bold" id="total-penjualan">Memuat...</h4>
                     </div>
                   </div>
                 </div>
@@ -46,7 +46,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                   <div class="card bg-secondary text-white border-0 h-100">
                     <div class="card-body py-3">
                       <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.85rem;">Laba/Rugi Bersih</h6>
-                      <h4 class="mb-0 fw-bold" id="laba-bersih">Rp 0</h4>
+                      <h4 class="mb-0 fw-bold" id="laba-bersih">Memuat...</h4>
                     </div>
                   </div>
                 </div>
@@ -54,24 +54,31 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
               <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
 
-              <div class="table-responsive mt-4">
-                <table class="table table-dark table-striped table-hover align-middle">
-                  <thead>
-                    <tr>
-                      <th scope="col">Tanggal & Waktu</th>
-                      <th scope="col">Nama Produk</th>
-                      <th scope="col">Tipe Event</th>
-                      <th scope="col">Kuantitas</th>
-                      <th scope="col">Harga / Modal</th>
-                      <th scope="col">Pihak Terkait</th>
-                    </tr>
-                  </thead>
-                  <tbody id="chronology-table-body">
-                    <tr>
-                      <td colspan="6" class="text-center">Memuat laporan...</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div id="table-container"
+                   hx-get={`${apiUrl}/api/product/admin/report`}
+                   hx-trigger="load"
+                   hx-ext="client-side-templates"
+                   handlebars-template="chronology-tmpl"
+                   hx-request='{"credentials": true}'>
+                <div class="table-responsive mt-4">
+                  <table class="table table-dark table-striped table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th scope="col">Tanggal & Waktu</th>
+                        <th scope="col">Nama Produk</th>
+                        <th scope="col">Tipe Event</th>
+                        <th scope="col">Kuantitas</th>
+                        <th scope="col">Harga / Modal</th>
+                        <th scope="col">Pihak Terkait</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colspan="6" class="text-center">Memuat laporan...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
             </div>
@@ -84,108 +91,137 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
   <Footer />
 
   <script id="chronology-tmpl" type="text/x-handlebars-template" is:raw>
-    {{#if chronology.length}}
-      {{#each chronology}}
-      <tr>
-        <td>{{formatDate date}}</td>
-        <td class="fw-bold">{{product_name}}</td>
-        <td>
-          {{#if (eq log_type "STOCK_IN")}}
-            <span class="badge bg-success">Stok Masuk</span>
-          {{else if (eq log_type "STOCK_OUT")}}
-            <span class="badge bg-danger">Terjual</span>
-          {{/if}}
-        </td>
-        <td>{{quantity}}</td>
-        <td>
-          {{#if (eq log_type "STOCK_IN")}}
-            <span class="text-warning">Rp {{cost_price}}</span>
-          {{else if (eq log_type "STOCK_OUT")}}
-            <span class="text-info">Rp {{sell_price}}</span>
-          {{/if}}
-        </td>
-        <td>
-          {{#if related_name}}
-            {{related_name}}
-          {{else}}
-            <span class="text-muted fst-italic">Sistem</span>
-          {{/if}}
-        </td>
-      </tr>
-      {{/each}}
+    {{#if (is2xx status)}}
+      <h4 class="mb-0 fw-bold" id="total-modal" hx-swap-oob="true">{{formatRp (totalModal data.chronology)}}</h4>
+      <h4 class="mb-0 fw-bold" id="total-penjualan" hx-swap-oob="true">{{formatRp (totalPenjualan data.chronology)}}</h4>
+      <h4 class="mb-0 fw-bold {{labaColorClass data.chronology}}" id="laba-bersih" hx-swap-oob="true">{{formatRp (labaBersih data.chronology)}}</h4>
+
+      <div class="table-responsive mt-4">
+        <table class="table table-dark table-striped table-hover align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Tanggal & Waktu</th>
+              <th scope="col">Nama Produk</th>
+              <th scope="col">Tipe Event</th>
+              <th scope="col">Kuantitas</th>
+              <th scope="col">Harga / Modal</th>
+              <th scope="col">Pihak Terkait</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#if data.chronology.length}}
+              {{#each data.chronology}}
+              <tr>
+                <td>{{formatDate date}}</td>
+                <td class="fw-bold">{{product_name}}</td>
+                <td>
+                  {{#if (eq log_type "STOCK_IN")}}
+                    <span class="badge bg-success">Stok Masuk</span>
+                  {{else if (eq log_type "STOCK_OUT")}}
+                    <span class="badge bg-danger">Terjual</span>
+                  {{/if}}
+                </td>
+                <td>{{quantity}}</td>
+                <td>
+                  {{#if (eq log_type "STOCK_IN")}}
+                    <span class="text-warning">{{formatRp cost_price}}</span>
+                  {{else if (eq log_type "STOCK_OUT")}}
+                    <span class="text-info">{{formatRp total_sell_price}} (@ {{formatRp sell_price}})</span>
+                  {{/if}}
+                </td>
+                <td>
+                  {{#if related_name}}
+                    {{related_name}}
+                  {{else}}
+                    <span class="text-muted fst-italic">Sistem</span>
+                  {{/if}}
+                </td>
+              </tr>
+              {{/each}}
+            {{else}}
+              <tr>
+                <td colspan="6" class="text-center">Belum ada data riwayat transaksi untuk laporan ini.</td>
+              </tr>
+            {{/if}}
+          </tbody>
+        </table>
+      </div>
     {{else}}
-      <tr>
-        <td colspan="6" class="text-center">Belum ada data riwayat transaksi untuk laporan ini.</td>
-      </tr>
+      <div class="table-responsive mt-4">
+        <table class="table table-dark table-striped table-hover align-middle">
+          <tbody>
+            <tr>
+              <td colspan="6" class="text-center text-danger">{{message}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     {{/if}}
   </script>
 
   <script define:vars={{ apiUrl }}>
-    document.addEventListener("DOMContentLoaded", async () => {
-
-      // Register Handlebars helpers
-      Handlebars.registerHelper('formatDate', function(dateString) {
-        const d = new Date(dateString);
-        return d.toLocaleString('id-ID', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof Handlebars !== 'undefined') {
+        Handlebars.registerHelper('formatDate', function(dateString) {
+          const d = new Date(dateString);
+          return d.toLocaleString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
         });
-      });
-      Handlebars.registerHelper('eq', function(a, b) {
-        return a === b;
-      });
-
-      // Fetch global report
-      try {
-        const res = await fetch(`${apiUrl}/api/product/admin/report`, {
-          credentials: 'include'
+        Handlebars.registerHelper('eq', function(a, b) {
+          return a === b;
         });
-        if (res.ok) {
-          const result = await res.json();
-          const chronology = result.data.chronology || [];
-          
-          let totalModal = 0;
-          let totalPenjualan = 0;
 
-          chronology.forEach(item => {
-            if (item.log_type === 'STOCK_IN') {
-              totalModal += (item.quantity * item.cost_price);
-            } else if (item.log_type === 'STOCK_OUT') {
-              totalPenjualan += (item.quantity * item.sell_price);
+        Handlebars.registerHelper('formatRp', function(num) {
+          return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
+        });
+
+        Handlebars.registerHelper('totalModal', function(chronology) {
+          let total = 0;
+          (chronology || []).forEach(item => {
+            if (item.log_type === 'STOCK_IN') total += (item.quantity * item.cost_price);
+          });
+          return total;
+        });
+
+        Handlebars.registerHelper('totalPenjualan', function(chronology) {
+          let total = 0;
+          (chronology || []).forEach(item => {
+            if (item.log_type === 'STOCK_OUT') {
+              item.total_sell_price = (item.quantity * item.sell_price);
+
+              total += item.total_sell_price
             }
           });
+          return total;
+        });
 
-          const labaBersih = totalPenjualan - totalModal;
+        Handlebars.registerHelper('labaBersih', function(chronology) {
+          let modal = 0;
+          let penjualan = 0;
+          (chronology || []).forEach(item => {
+            if (item.log_type === 'STOCK_IN') modal += (item.quantity * item.cost_price);
+            else if (item.log_type === 'STOCK_OUT') penjualan += (item.quantity * item.sell_price);
+          });
+          return penjualan - modal;
+        });
 
-          // Format currency
-          const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-
-          document.getElementById('total-modal').textContent = formatRp(totalModal);
-          document.getElementById('total-penjualan').textContent = formatRp(totalPenjualan);
-          document.getElementById('laba-bersih').textContent = formatRp(labaBersih);
-          
-          if (labaBersih > 0) {
-            document.getElementById('laba-bersih').classList.add('text-success');
-          } else if (labaBersih < 0) {
-            document.getElementById('laba-bersih').classList.add('text-danger');
-          }
-
-          document.getElementById('summary-cards').style.display = 'flex';
-
-          const source = document.getElementById("chronology-tmpl").innerHTML;
-          const template = Handlebars.compile(source);
-          document.getElementById('chronology-table-body').innerHTML = template({ chronology });
-        } else {
-          throw new Error('Gagal mengambil laporan');
-        }
-      } catch (err) {
-        console.error("Gagal mengambil laporan:", err);
-        document.getElementById('error-message').textContent = 'Gagal memuat data laporan global';
-        document.getElementById('error-message').classList.remove('d-none');
-        document.getElementById('chronology-table-body').innerHTML = '';
+        Handlebars.registerHelper('labaColorClass', function(chronology) {
+          let modal = 0;
+          let penjualan = 0;
+          (chronology || []).forEach(item => {
+            if (item.log_type === 'STOCK_IN') modal += (item.quantity * item.cost_price);
+            else if (item.log_type === 'STOCK_OUT') penjualan += (item.quantity * item.sell_price);
+          });
+          const laba = penjualan - modal;
+          if (laba > 0) return 'text-success';
+          if (laba < 0) return 'text-danger';
+          return '';
+        });
       }
     });
   </script>
