@@ -7,23 +7,25 @@
 <script id="products-tmpl" type="text/x-handlebars-template" is:raw>
   {{#if data.products.length}}
     {{#each data.products}}
-    <div class="col mb-5">
-      <div class="card h-100">
-        <img class="card-img-top" src="{{getApiUrl}}/public/img/{{image}}" alt="{{name}}" />
-        <div class="card-body p-4">
+    <div class="flex flex-col">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow duration-300">
+        <img class="w-full h-48 object-cover" src="{{getApiUrl}}/public/img/{{image}}" alt="{{name}}" />
+        <div class="p-5 flex-grow flex flex-col">
           <div class="text-center">
-            <h5 class="fw-bolder">{{name}}</h5>
+            <h5 class="text-lg font-bold text-gray-900 mb-1">{{name}}</h5>
+            <div class="font-semibold text-blue-600 mb-2">
             {{#if is_service}}
             Rp {{current_price}} / Jam
             {{else}}
             Rp {{current_price}}
             {{/if}}
+            </div>
           </div>
-          <p class="pt-2 card-text text-muted" style="font-size: 0.9em;">{{description}}</p>
+          <p class="text-sm text-gray-600 text-center">{{description}}</p>
         </div>
-        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+        <div class="p-5 pt-0 mt-auto">
           <div class="text-center">
-            <p class="mb-2 text-muted small">
+            <p class="mb-3 text-sm text-gray-500">
               {{#if is_service}}
               Kuota: {{stock}} Tim
               {{else}}
@@ -33,17 +35,17 @@
             
             {{#if (isAdmin)}}
             <!-- Admin Actions -->
-            <a class="btn btn-outline-dark mt-auto" href="/admin/edit-product?id={{id}}">
+            <a class="block w-full text-center px-4 py-2 border border-gray-900 rounded-lg font-medium text-gray-900 hover:bg-gray-900 hover:text-white transition-colors" href="/admin/edit-product?id={{id}}">
               Edit
             </a>
             {{else}}
             <!-- User Actions -->
               {{#if (isLoggedIn)}}
-              <a class="btn btn-outline-dark mt-auto" href="/product?id={{id}}">
+              <a class="block w-full text-center px-4 py-2 border border-gray-900 rounded-lg font-medium text-gray-900 hover:bg-gray-900 hover:text-white transition-colors" href="/product?id={{id}}">
                 Pesan
               </a>
               {{else}}
-              <a class="btn btn-outline-dark mt-auto" href="/login">
+              <a class="block w-full text-center px-4 py-2 border border-gray-900 rounded-lg font-medium text-gray-900 hover:bg-gray-900 hover:text-white transition-colors" href="/login">
                 Pesan
               </a>
               {{/if}}
@@ -55,8 +57,9 @@
     </div>
     {{/each}}
   {{else}}
-    <div class="col-12 text-center mt-4">
-      <h3>Tidak ada produk yang ditemukan.</h3>
+    <div class="col-span-full text-center py-12">
+      <h3 class="text-2xl font-semibold text-gray-700">Tidak ada produk yang ditemukan.</h3>
+      <p class="text-gray-500 mt-2">Coba sesuaikan kata kunci pencarian Anda.</p>
     </div>
   {{/if}}
 </script>
