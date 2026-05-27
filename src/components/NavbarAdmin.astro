@@ -1,8 +1,9 @@
 ---
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 ---
-<nav class="navbar navbar-expand-lg navbar-light bg-light" x-data="{ 
+<nav class="bg-white border-b border-gray-200 shadow-sm" x-data="{ 
   isAdmin: false, 
+  mobileMenuOpen: false,
   async init() { 
     try {
       const response = await fetch(`${apiUrl}/api/auth/me`, { 
@@ -10,10 +11,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
       });
       const data = await response.json();
       if (data && data.data && data.data.user && data.data.user.is_admin) {
-
         this.isAdmin = true;
         localStorage.setItem('isAdmin', true);
-
       } else {
         window.location.href = '/admin';
       }
@@ -22,52 +21,65 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
     }
   }
 }">
-    <div class="container px-4 px-lg-5">
-      <a class="navbar-brand ms-2 fw-bold" href="/admin/dashboard">
-        <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" height="40px">
-        S-TECH ADMIN
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span
-          class="navbar-toggler-icon"></span></button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4" id="navbar-nav-list">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <div class="flex">
+        <!-- Logo -->
+        <div class="flex-shrink-0 flex items-center">
+          <a href="/admin/dashboard" class="flex items-center gap-3 font-bold text-xl text-gray-900">
+            <img src={`${apiUrl}/assets/assets/img/81042.jpg`} alt="S-TECH" class="h-10 w-auto rounded-md shadow-sm">
+            <span>S-TECH ADMIN</span>
+          </a>
+        </div>
+        <!-- Desktop Menu -->
+        <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+          <a x-show="isAdmin" style="display: none;" href="/admin/dashboard" class="text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-blue-500 text-sm font-medium transition-colors">Dashboard</a>
           
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/dashboard">Dashboard</a>
-          </li>
+          <a x-show="isAdmin" style="display: none;" href="/admin/add-product" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300 text-sm font-medium transition-colors">Add Product</a>
+          <a x-show="isAdmin" style="display: none;" href="/admin/order" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300 text-sm font-medium transition-colors">Order</a>
+          <a x-show="isAdmin" style="display: none;" href="/admin/supplier" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300 text-sm font-medium transition-colors">Supplier</a>
+          <a x-show="isAdmin" style="display: none;" href="/admin/report" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300 text-sm font-medium transition-colors">Report</a>
           
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/add-product">Add Product</a>
-          </li>
-
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/order">Order</a>
-          </li>
-
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/supplier">Supplier</a>
-          </li>
-
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <a class="nav-link" aria-current="page" href="/admin/report">Report</a>
-          </li>
-
-
-          <li class="nav-item" x-show="isAdmin" style="display: none;">
-            <button hx-post={`${apiUrl}/api/auth/logout`}
-                    hx-request='{"credentials": true}'
-                    @click="localStorage.removeItem('user'); localStorage.removeItem('isAdmin');"
-                    class="nav-link bg-white border-0" 
-                    aria-current="page">Logout</button>
-          </li>
-        </ul>
-        
-        <div class="my-auto" x-show="isAdmin" style="display: none;">
-          <p class="mb-0 fw-bold">Admin S-TECH</p>
+          <button x-show="isAdmin" style="display: none;" hx-post={`${apiUrl}/api/auth/logout`} hx-request='{"credentials": true}' @click="localStorage.removeItem('user'); localStorage.removeItem('isAdmin');" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300 text-sm font-medium bg-transparent border-0 cursor-pointer transition-colors">Logout</button>
         </div>
       </div>
+      <!-- Right side -->
+      <div class="hidden sm:ml-6 sm:flex sm:items-center">
+        <div x-show="isAdmin" style="display: none;" class="text-sm font-medium text-white bg-blue-600 px-3 py-1.5 rounded-full shadow-sm">
+          Admin S-TECH
+        </div>
+      </div>
+      <!-- Mobile menu button -->
+      <div class="-mr-2 flex items-center sm:hidden">
+        <button @click="mobileMenuOpen = !mobileMenuOpen" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500" aria-expanded="false">
+          <span class="sr-only">Open main menu</span>
+          <svg x-show="!mobileMenuOpen" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg x-show="mobileMenuOpen" style="display: none;" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div x-show="mobileMenuOpen" style="display: none;" class="sm:hidden" id="mobile-menu">
+    <div class="pt-2 pb-3 space-y-1">
+      <a x-show="isAdmin" href="/admin/dashboard" class="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Dashboard</a>
+      <a x-show="isAdmin" href="/admin/add-product" class="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Add Product</a>
+      <a x-show="isAdmin" href="/admin/order" class="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Order</a>
+      <a x-show="isAdmin" href="/admin/supplier" class="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Supplier</a>
+      <a x-show="isAdmin" href="/admin/report" class="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Report</a>
+      <button x-show="isAdmin" hx-post={`${apiUrl}/api/auth/logout`} hx-request='{"credentials": true}' @click="localStorage.removeItem('user'); localStorage.removeItem('isAdmin');" class="w-full text-left border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium bg-transparent">Logout</button>
+    </div>
+    <div x-show="isAdmin" class="pt-4 pb-3 border-t border-gray-200">
+      <div class="flex items-center px-4">
+        <div class="text-base font-medium text-blue-600">Admin S-TECH</div>
+      </div>
+    </div>
+  </div>
 </nav>
 
 <script define:vars={{ apiUrl }}>

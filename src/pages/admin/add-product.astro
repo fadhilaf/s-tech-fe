@@ -13,7 +13,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 <Layout title="Add Product">
   <NavbarAdmin />
 
-  <section class="gradient-custom pb-5" style="min-height: 100vh;">
+  <section class="pb-5 bg-gray-50" style="min-height: 100vh;">
     <div class="container py-5">
       <div class="row d-flex justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
@@ -33,6 +33,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                 hx-request='{"credentials": true}'
                 hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
                 hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+                hx-on::xhr:progress="document.getElementById('progress').value = (event.detail.loaded / event.detail.total) * 100;"
               >
                 <!-- Name -->
                 <FormField 
@@ -92,6 +93,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
                   containerClass="form-outline form-white mb-5 text-start" 
                   inputClass="form-control form-control-lg" 
                 />
+                <progress id='progress' value='0' max='100' class="w-100 mb-3"></progress>
 
                 <button
                   id="submit-btn"
@@ -124,12 +126,4 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         <option value="" disabled selected>{{message}}</option>
     {{/if}}
   </script>
-
-  <style>
-    .gradient-custom {
-      background: #6a11cb;
-      background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
-      background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
-    }
-  </style>
 </Layout>
