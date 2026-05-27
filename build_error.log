@@ -1,0 +1,22 @@
+
+> @0.0.1 build /home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce
+> astro build
+
+18:38:56 [types] Generated 63ms
+18:38:56 [build] output: "static"
+18:38:56 [build] mode: "static"
+18:38:56 [build] directory: /home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce/dist/
+18:38:56 [build] Collecting build info...
+18:38:56 [build] ✓ Completed in 122ms.
+18:38:56 [build] Building static entrypoints...
+18:38:57 [ERROR] [vite] ✗ Build failed in 1.74s
+Unterminated string literal
+  Location:
+    /home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce/src/layouts/Layout.astro:36:62
+  Stack trace:
+    at failureErrorWithLog (/home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce/node_modules/.pnpm/esbuild@0.27.7/node_modules/esbuild/lib/main.js:1748:15)
+    at responseCallbacks.<computed> (/home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce/node_modules/.pnpm/esbuild@0.27.7/node_modules/esbuild/lib/main.js:884:9)
+    at Socket.readFromStdout (/home/fadhilaf/Documents/Github/e-commerce-project/astro-htmx-ssg-e-commerce/node_modules/.pnpm/esbuild@0.27.7/node_modules/esbuild/lib/main.js:862:7)
+    at addChunk (node:internal/streams/readable:561:12)
+    at Readable.push (node:internal/streams/readable:392:5)
+ ELIFECYCLE  Command failed with exit code 1.

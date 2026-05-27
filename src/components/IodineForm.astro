@@ -13,15 +13,15 @@ const { action, method="POST", hxSwap="none", formId="iodine-form" } = Astro.pro
     hx-ext="response-targets"
     hx-target-4xx="this"
     hx-target-5xx="this"
-    hx-on::before-request="const btn = this.querySelector('button[type=submit]'); if(btn) { btn.disabled = true; btn.dataset.original = btn.innerText; btn.innerText = 'Loading...'; }"
-    hx-on::after-request="const btn = this.querySelector('button[type=submit]'); if(btn) { btn.disabled = false; btn.innerText = btn.dataset.original; }"
 >
     <!-- Iodine JS for Validation -->
     <script src="https://cdn.jsdelivr.net/npm/@kingshott/iodine@latest/dist/iodine.min.js" is:inline></script>
     
     <!-- Global Server Error Fallback -->
     <template x-if="serverError">
-      <div class="alert alert-danger text-start fw-bold mb-4" role="alert" x-text="serverError"></div>
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 font-bold text-left" role="alert">
+        <span class="block sm:inline" x-text="serverError"></span>
+      </div>
     </template>
 
     <slot />
@@ -50,7 +50,6 @@ const { action, method="POST", hxSwap="none", formId="iodine-form" } = Astro.pro
 
                 },
                 validate(el) {
-                    if (typeof Iodine === 'undefined' || !el.dataset.rules) return;
                     try {
                         const result = Iodine.assert(el.value, JSON.parse(el.dataset.rules));
                         if (result.valid !== false) {
