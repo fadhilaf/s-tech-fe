@@ -59,6 +59,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
         hx-request='{"credentials": true}'
         hx-on::before-request="document.getElementById('submit-btn').disabled = true; document.getElementById('submit-btn').innerHTML = 'MENYIMPAN...';"
         hx-on::after-request="document.getElementById('submit-btn').disabled = false; document.getElementById('submit-btn').innerHTML = 'SIMPAN';"
+        hx-on::xhr:progress="document.getElementById('progress').value = (event.detail.loaded / event.detail.total) * 100;"
       >
         <div class="form-outline form-white mb-4 text-start">
           <label class="form-label" for="name">Nama Produk</label>
@@ -75,6 +76,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
           <input type="file" id="image" name="image" class="form-control form-control-lg" accept="image/*" />
           <small class="text-muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
         </div>
+
+        <progress id='progress' value='0' max='100' class="w-100 mb-3"></progress>
 
         <button
           id="submit-btn"
